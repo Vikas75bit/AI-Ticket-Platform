@@ -1,0 +1,12 @@
+fastapi
+uvicorn
+groq
+python-dotenv
+requests
+sqlalchemy
+psycopg2-binary
+celery
+redis
+chromadb
+pgvector
+httpx
