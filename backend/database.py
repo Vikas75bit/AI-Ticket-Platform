@@ -8,9 +8,11 @@ from dotenv import load_dotenv
 load_dotenv()
 
 # We are fetching your secret Supabase pooler URL directly from your secure .env file!
-DATABASE_URL = os.getenv("SUPABASE_DB_URL")
+DATABASE_URL = os.getenv(
+    "SUPABASE_DB_URL",
+    ""
+).strip()
 
-# Create the core engine that manages the network sockets
 engine = create_engine(DATABASE_URL)
 
 # Create a session factory to spin up quick transactional sessions
