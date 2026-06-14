@@ -1,5 +1,4 @@
-from sentence_transformers import SentenceTransformer
-
+from groq import Groq
 class EmbeddingService:
 
     def __init__(self):
