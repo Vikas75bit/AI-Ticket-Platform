@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import axios from "axios";
 import { supabase } from "./supabase";
 
-const API_BASE_URL = "http://localhost:8000";
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || "http://localhost:8000";
 
 import {
   PieChart,
@@ -119,7 +119,7 @@ function App() {
 
   const fetchAnalytics = async () => {
     try {
-      const response = await fetch("http://localhost:8000/analytics");
+      const response = await fetch(`${API_BASE_URL}/analytics`);
       if (!response.ok) throw new Error("Failed to fetch analytics");
       const data = await response.json();
       setAnalytics(data);
@@ -149,7 +149,7 @@ function App() {
 
   const fetchTickets = () => {
     axios
-      .get("http://localhost:8000/tickets")
+      .get(`${API_BASE_URL}/tickets`)
       .then((response) => {
         setTickets(Array.isArray(response.data) ? response.data : []);
       })
@@ -255,7 +255,7 @@ function App() {
 
     setIsSubmitting(true);
     try {
-      await axios.patch(`http://localhost:8000/tickets/${selectedTicket.id}/override`, {
+      await axios.patch(`${API_BASE_URL}/tickets/${selectedTicket.id}/override`, {
         manual_action: overrideText,
       });
 
