@@ -15,7 +15,7 @@ export default function AdminConsole() {
 
     socketRef.current.onmessage = (event) => {
       const response = JSON.parse(event.data);
-      const timestamp = new Date().toLocaleTimeString();
+      const timestamp = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
       
       if (response.type === "SUCCESS") {
         setLogs((prev) => [...prev, `[${timestamp}] ✅ SYSTEM RESPONSE: ${response.message}`]);
@@ -57,20 +57,22 @@ export default function AdminConsole() {
   };
 
   return (
-    <div className="bg-black text-green-400 p-4 font-mono rounded-lg shadow-2xl h-64 flex flex-col justify-between border border-green-900">
-      <div className="overflow-y-auto space-y-1 text-xs custom-scrollbar">
+    <div className="bg-brand-surface text-brand-text-secondary p-4 font-mono rounded-lg shadow-sm h-64 flex flex-col justify-between border border-brand-border">
+      <div className="overflow-y-auto space-y-1.5 text-[11px] custom-scrollbar mb-2">
         {logs.map((log, index) => (
-          <div key={index}>{log}</div>
+          <div key={index} className={`${log.includes('✅') ? 'text-brand-success' : log.includes('❌') ? 'text-brand-danger' : log.includes('⚡') ? 'text-brand-primary' : 'text-brand-text-secondary'}`}>
+            {log}
+          </div>
         ))}
       </div>
-      <form onSubmit={handleSendCommand} className="mt-2 flex items-center border-t border-green-950 pt-2">
-        <span className="text-green-500 mr-2 font-bold">root@ai-saas:~#</span>
+      <form onSubmit={handleSendCommand} className="mt-2 flex items-center border-t border-brand-border/40 pt-3">
+        <span className="text-brand-primary mr-2 font-semibold text-[11px]">admin@sys:~#</span>
         <input
           type="text"
           value={inputCommand}
           onChange={(e) => setInputCommand(e.target.value)}
           placeholder="/override <id> <status>"
-          className="bg-transparent text-green-300 outline-none flex-grow placeholder-green-800 text-xs"
+          className="bg-transparent text-brand-text-primary outline-none flex-grow placeholder:text-brand-text-secondary/30 text-[11px]"
         />
       </form>
     </div>
