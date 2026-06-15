@@ -8,12 +8,3 @@ export const supabase = createClient(
   supabaseAnonKey
 );
 
-console.log(
-  "SUPABASE URL RAW:",
-  JSON.stringify(import.meta.env.VITE_SUPABASE_URL)
-);
-
-console.log(
-  "SUPABASE KEY EXISTS:",
-  !!import.meta.env.VITE_SUPABASE_ANON_KEY
-);
