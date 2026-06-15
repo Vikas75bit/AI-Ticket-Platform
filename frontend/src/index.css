@@ -3,6 +3,7 @@
 @import "tailwindcss";
 
 @theme {
+  /* Brand Colors */
   --color-brand-bg: #09090b;
   --color-brand-surface: #18181b;
   --color-brand-elevated: #27272a;
@@ -15,30 +16,51 @@
   --color-brand-text-secondary: #a1a1aa;
 }
 
-body {
-  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+/* Global Reset & Base Styles */
+html, body {
+  margin: 0;
+  padding: 0;
   background-color: var(--color-brand-bg);
   color: var(--color-brand-text-primary);
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+  line-height: 1.5;
 }
 
-/* Custom modern scrollbar */
+/* Typography Hierarchy Enhancements */
+h1, h2, h3, h4, h5, h6 {
+  color: var(--color-brand-text-primary);
+  font-weight: 600;
+  letter-spacing: -0.02em;
+}
+
+/* Sleek Scrollbar (Linear/Vercel inspired) */
 ::-webkit-scrollbar {
-  width: 8px;
-  height: 8px;
+  width: 6px;
+  height: 6px;
 }
 
 ::-webkit-scrollbar-track {
-  background: var(--color-brand-bg);
+  background: transparent;
 }
 
 ::-webkit-scrollbar-thumb {
-  background: var(--color-brand-surface);
+  background: var(--color-brand-border);
   border-radius: 4px;
-  border: 2px solid var(--color-brand-bg);
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: var(--color-brand-border);
+  background: var(--color-brand-text-secondary);
+}
+
+::selection {
+  background: rgba(99, 102, 241, 0.3); /* Primary color with opacity */
+  color: var(--color-brand-text-primary);
+}
+
+/* Focus Rings */
+*:focus-visible {
+  outline: 2px solid var(--color-brand-primary);
+  outline-offset: 2px;
 }
