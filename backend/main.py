@@ -39,12 +39,20 @@ load_dotenv(BASE_DIR / ".env")
 app = FastAPI()
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:3000", "http://localhost:5173", "https://ai-ticket-system-frontend-backend.vercel.app"],
+    allow_origins=[
+        "http://localhost:3000",
+        "http://localhost:5173",
+
+        # Production frontend
+        "https://ai-ticket-platform.vercel.app",
+
+        # Old deployment URL (keep for safety)
+        "https://ai-ticket-system-frontend-backend.vercel.app"
+    ],
     allow_credentials=True,
-    allow_methods=["*"],  # 👈 This asterisk covers GET, POST, PATCH, and DELETE safely!
+    allow_methods=["*"],
     allow_headers=["*"],
 )
-
 # Database Session Dependency
 def get_db():
     db = SessionLocal()
