@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { supabase } from "./supabase";
 import { motion, AnimatePresence } from "framer-motion";
-import { Lock, Mail, ShieldAlert, CheckCircle2, ArrowRight } from "lucide-react";
+import { Loader2, AlertCircle, ArrowRight } from "lucide-react";
 
 function Login() {
   const [email, setEmail] = useState("");
@@ -50,7 +50,8 @@ function Login() {
     }
   };
 
-  const handleLogin = async () => {
+  const handleLogin = async (e) => {
+    e.preventDefault();
     if (!email || !password) {
       showNotification("Please enter both email and password.");
       return;
@@ -71,116 +72,98 @@ function Login() {
   };
 
   return (
-    <div className="min-h-screen bg-brand-bg flex items-center justify-center p-6 relative overflow-hidden selection:bg-brand-primary/30 selection:text-white">
-      {/* Subtle Linear-like background glow */}
-      <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[1000px] h-[300px] bg-gradient-to-b from-brand-primary/10 to-transparent blur-[120px] rounded-full pointer-events-none"></div>
-
+    <div className="min-h-screen bg-brand-bg flex items-center justify-center p-4 sm:p-8">
       <motion.div
-        initial={{ opacity: 0, y: 15 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.4, ease: "easeOut" }}
-        className="max-w-md w-full bg-brand-surface border border-brand-border/60 rounded-2xl p-8 shadow-2xl relative z-10"
+        initial={{ opacity: 0, scale: 0.98 }}
+        animate={{ opacity: 1, scale: 1 }}
+        transition={{ duration: 0.4, ease: [0.16, 1, 0.3, 1] }}
+        className="w-full max-w-[380px]"
       >
-        {/* Logo / Badge */}
-        <div className="text-center mb-8">
-          <div className="inline-flex items-center gap-2 px-3 py-1 bg-brand-elevated/40 border border-brand-border/40 rounded-full text-[11px] font-medium text-brand-text-secondary uppercase tracking-wider mb-4">
-            <span className="w-1.5 h-1.5 rounded-full bg-brand-primary animate-pulse"></span>
-            Portal Access
+        <div className="mb-8 text-center sm:text-left">
+          <div className="inline-flex items-center justify-center w-10 h-10 rounded-xl bg-brand-surface border border-brand-border mb-6">
+            <svg viewBox="0 0 24 24" fill="none" className="w-5 h-5 text-brand-primary" stroke="currentColor" strokeWidth="2">
+              <path strokeLinecap="round" strokeLinejoin="round" d="M13 10V3L4 14h7v7l9-11h-7z" />
+            </svg>
           </div>
-          <h1 className="text-2xl font-bold tracking-tight text-brand-text-primary">
-            Welcome Back
+          <h1 className="text-xl font-semibold tracking-tight text-brand-text-primary mb-1">
+            Log in to your account
           </h1>
-          <p className="text-xs text-brand-text-secondary mt-2">
-            Sign in to access your intelligent ticket support console.
+          <p className="text-sm text-brand-text-secondary">
+            Welcome back to the portal
           </p>
         </div>
 
-        {/* Notifications */}
         <AnimatePresence mode="wait">
           {notification.message && (
             <motion.div
-              initial={{ opacity: 0, height: 0, y: -10 }}
-              animate={{ opacity: 1, height: "auto", y: 0 }}
-              exit={{ opacity: 0, height: 0, y: -10 }}
-              transition={{ duration: 0.2 }}
-              className="overflow-hidden"
+              initial={{ opacity: 0, height: 0 }}
+              animate={{ opacity: 1, height: "auto" }}
+              exit={{ opacity: 0, height: 0 }}
+              className="overflow-hidden mb-6"
             >
-              <div
-                className={`mb-6 p-4 rounded-lg text-xs border flex items-start gap-3 ${
-                  notification.type === "success"
-                    ? "bg-brand-success/10 border-brand-success/20 text-brand-success"
-                    : "bg-brand-danger/10 border-brand-danger/20 text-brand-danger"
-                }`}
-              >
-                {notification.type === "success" ? (
-                  <CheckCircle2 className="w-4 h-4 shrink-0 mt-0.5" />
-                ) : (
-                  <ShieldAlert className="w-4 h-4 shrink-0 mt-0.5" />
-                )}
-                <p className="flex-1 leading-normal font-medium">{notification.message}</p>
+              <div className={`p-3 rounded-lg text-sm flex items-start gap-2.5 ${
+                notification.type === "success"
+                  ? "bg-brand-success/10 text-brand-success border border-brand-success/20"
+                  : "bg-brand-danger/10 text-brand-danger border border-brand-danger/20"
+              }`}>
+                <AlertCircle className="w-4 h-4 shrink-0 mt-0.5" />
+                <span className="leading-relaxed">{notification.message}</span>
               </div>
             </motion.div>
           )}
         </AnimatePresence>
 
-        {/* Input Fields */}
-        <div className="space-y-4">
-          <div>
-            <label className="text-[10px] uppercase font-semibold tracking-wider text-brand-text-secondary block mb-1.5">
-              Email Address
+        <form onSubmit={handleLogin} className="space-y-4">
+          <div className="space-y-1.5">
+            <label className="text-sm font-medium text-brand-text-primary">
+              Email
             </label>
-            <div className="relative">
-              <Mail className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-brand-text-secondary/60" />
-              <input
-                type="email"
-                placeholder="name@example.com"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                disabled={loading}
-                className="w-full pl-10 pr-4 py-2.5 bg-brand-bg border border-brand-border/60 hover:border-brand-border rounded-lg text-brand-text-primary text-xs focus:outline-none focus:ring-1 focus:ring-brand-primary focus:border-brand-primary transition duration-150 placeholder:text-brand-text-secondary/40 disabled:opacity-50"
-              />
-            </div>
-          </div>
-
-          <div>
-            <label className="text-[10px] uppercase font-semibold tracking-wider text-brand-text-secondary block mb-1.5">
-              Password
-            </label>
-            <div className="relative">
-              <Lock className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-brand-text-secondary/60" />
-              <input
-                type="password"
-                placeholder="••••••••"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                disabled={loading}
-                className="w-full pl-10 pr-4 py-2.5 bg-brand-bg border border-brand-border/60 hover:border-brand-border rounded-lg text-brand-text-primary text-xs focus:outline-none focus:ring-1 focus:ring-brand-primary focus:border-brand-primary transition duration-150 placeholder:text-brand-text-secondary/40 disabled:opacity-50"
-              />
-            </div>
-          </div>
-
-          {/* Action Buttons */}
-          <div className="pt-4 flex flex-col gap-3">
-            <motion.button
-              whileTap={{ scale: 0.98 }}
-              onClick={handleLogin}
+            <input
+              type="email"
+              placeholder="name@example.com"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
               disabled={loading}
-              className="w-full py-2.5 bg-brand-primary hover:bg-brand-primary/90 disabled:opacity-50 text-white font-semibold text-xs rounded-lg shadow-md hover:shadow-lg transition duration-150 flex items-center justify-center gap-1.5 cursor-pointer"
-            >
-              {loading ? "Authenticating..." : "Sign In"}
-              {!loading && <ArrowRight className="w-3.5 h-3.5" />}
-            </motion.button>
+              className="w-full px-3 py-2 bg-brand-bg border border-brand-border rounded-lg text-sm text-brand-text-primary placeholder:text-brand-text-secondary/50 focus:outline-none focus:border-brand-primary focus:ring-1 focus:ring-brand-primary transition-colors disabled:opacity-50"
+            />
+          </div>
 
-            <motion.button
-              whileTap={{ scale: 0.98 }}
+          <div className="space-y-1.5">
+            <div className="flex items-center justify-between">
+              <label className="text-sm font-medium text-brand-text-primary">
+                Password
+              </label>
+            </div>
+            <input
+              type="password"
+              placeholder="••••••••"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              disabled={loading}
+              className="w-full px-3 py-2 bg-brand-bg border border-brand-border rounded-lg text-sm text-brand-text-primary placeholder:text-brand-text-secondary/50 focus:outline-none focus:border-brand-primary focus:ring-1 focus:ring-brand-primary transition-colors disabled:opacity-50"
+            />
+          </div>
+
+          <div className="pt-2 flex flex-col gap-3">
+            <button
+              type="submit"
+              disabled={loading}
+              className="w-full flex items-center justify-center gap-2 px-4 py-2.5 bg-brand-text-primary text-brand-bg hover:bg-brand-text-primary/90 disabled:opacity-50 disabled:hover:bg-brand-text-primary font-medium text-sm rounded-lg transition-colors cursor-pointer"
+            >
+              {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : "Sign in"}
+            </button>
+
+            <button
+              type="button"
               onClick={handleSignup}
               disabled={loading}
-              className="w-full py-2.5 bg-brand-elevated/40 hover:bg-brand-elevated border border-brand-border/60 hover:border-brand-border disabled:opacity-50 text-brand-text-primary font-semibold text-xs rounded-lg transition duration-150 cursor-pointer"
+              className="w-full flex items-center justify-center gap-2 px-4 py-2.5 bg-brand-surface border border-brand-border hover:bg-brand-elevated text-brand-text-primary font-medium text-sm rounded-lg transition-colors cursor-pointer disabled:opacity-50"
             >
-              Create Account
-            </motion.button>
+              Create an account
+              <ArrowRight className="w-4 h-4 text-brand-text-secondary" />
+            </button>
           </div>
-        </div>
+        </form>
       </motion.div>
     </div>
   );
