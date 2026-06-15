@@ -1,6 +1,33 @@
 import { useEffect, useState } from "react";
 import axios from "axios";
 import { supabase } from "./supabase";
+import { motion, AnimatePresence } from "framer-motion";
+import {
+  Ticket,
+  Search,
+  Users,
+  Activity,
+  BarChart3,
+  BookOpen,
+  AlertCircle,
+  RefreshCw,
+  Send,
+  CheckCircle,
+  Trash2,
+  LogOut,
+  ArrowRight,
+  ShieldAlert,
+  BrainCircuit,
+  Sparkles,
+  Loader2,
+  ExternalLink,
+  ChevronRight,
+  Filter,
+  Layers,
+  Clock,
+  TrendingUp,
+  Settings
+} from "lucide-react";
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || "http://localhost:8000";
 
@@ -26,7 +53,6 @@ function App() {
   const [urgencyFilter, setUrgencyFilter] = useState("All");
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-  const [darkMode, setDarkMode] = useState(false);
   const [ticketFilter, setTicketFilter] = useState("all");
 
   const [selectedTicket, setSelectedTicket] = useState(null);
@@ -387,7 +413,7 @@ function App() {
     { name: "Low", value: tickets.filter((ticket) => ticket.urgency === "Low").length },
   ];
 
-  const COLORS = ["#f43f5e", "#eab308", "#10b981"];
+  const CHART_COLORS = ["#ef4444", "#f59e0b", "#10b981"]; // Danger, Warning, Success match
 
   const addKnowledge = async () => {
     if (!knowledgeTitle.trim() || !knowledgeContent.trim()) {
@@ -465,10 +491,10 @@ function App() {
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-slate-950 p-8">
+      <div className="min-h-screen flex items-center justify-center bg-brand-bg p-8">
         <div className="text-center">
-          <div className="inline-block w-8 h-8 border-4 border-indigo-500 border-t-transparent rounded-full animate-spin mb-4"></div>
-          <div className="text-sm font-semibold text-slate-400">Loading Dashboard Framework...</div>
+          <Loader2 className="w-8 h-8 text-brand-primary animate-spin mx-auto mb-4" />
+          <div className="text-xs font-medium text-brand-text-secondary">Loading dashboard infrastructure...</div>
         </div>
       </div>
     );
@@ -476,16 +502,16 @@ function App() {
 
   if (error) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-slate-950 p-8">
-        <div className="max-w-md w-full bg-slate-900 border border-slate-800 rounded-3xl p-8 text-center shadow-2xl">
-          <div className="w-12 h-12 bg-rose-500/10 text-rose-500 rounded-full flex items-center justify-center mx-auto mb-4 text-xl">⚠</div>
-          <h2 className="text-lg font-bold text-white mb-2">Failed to Load Dashboard</h2>
-          <p className="text-sm text-slate-400 mb-6">{error}</p>
+      <div className="min-h-screen flex items-center justify-center bg-brand-bg p-8">
+        <div className="max-w-md w-full bg-brand-surface border border-brand-border/60 rounded-xl p-8 text-center shadow-2xl">
+          <AlertCircle className="w-10 h-10 text-brand-danger mx-auto mb-4" />
+          <h2 className="text-sm font-bold text-brand-text-primary mb-2">Failed to Load Dashboard</h2>
+          <p className="text-xs text-brand-text-secondary mb-6 leading-normal">{error}</p>
           <button
             onClick={() => window.location.reload()}
-            className="px-6 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white font-semibold text-sm rounded-xl transition shadow-lg"
+            className="px-5 py-2 bg-brand-primary hover:bg-brand-primary/95 text-white font-semibold text-xs rounded-lg transition shadow-md cursor-pointer"
           >
-            Retry Connection
+            Retry Handshake
           </button>
         </div>
       </div>
@@ -493,45 +519,61 @@ function App() {
   }
 
   return (
-    <div className={`min-h-screen transition-all duration-300 relative pb-12 ${darkMode ? "bg-slate-950 text-slate-100" : "bg-slate-50 text-slate-900"
-      }`}>
-      {/* Toast Notifications */}
-      {notification.message && (
-        <div className="fixed top-6 left-1/2 transform -translate-x-1/2 z-50 max-w-md w-full px-4">
-          <div className={`p-4 rounded-2xl shadow-2xl border backdrop-blur-xl flex items-start gap-3 transition-all duration-300 animate-in fade-in slide-in-from-top-4 ${notification.type === "success"
-              ? "bg-emerald-950/90 border-emerald-500/30 text-emerald-400"
-              : "bg-rose-950/90 border-rose-500/30 text-rose-400"
-            }`}>
-            <span className="text-base font-bold">{notification.type === "success" ? "✓" : "⚠"}</span>
-            <p className="flex-1 text-sm font-semibold leading-tight">{notification.message}</p>
-          </div>
-        </div>
-      )}
+    <div className="min-h-screen bg-brand-bg text-brand-text-primary pb-16 selection:bg-brand-primary/30 selection:text-white relative overflow-x-hidden">
+      {/* Sleek top glow gradient */}
+      <div className="absolute top-0 left-1/2 -translate-x-1/2 w-full max-w-[1400px] h-[300px] bg-gradient-to-b from-brand-primary/5 to-transparent blur-[120px] rounded-full pointer-events-none"></div>
 
-      {/* Top Navigation */}
-      <nav className={`border-b backdrop-blur-md sticky top-0 z-40 transition-colors duration-300 ${darkMode ? "bg-slate-950/80 border-slate-900" : "bg-white/80 border-slate-200"
-        }`}>
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between h-16 items-center">
-            <div className="flex items-center gap-3">
-              <div className="w-8 h-8 rounded-lg bg-gradient-to-tr from-indigo-500 to-purple-600 flex items-center justify-center text-white font-black">A</div>
-              <span className="font-extrabold tracking-tight text-lg">AI Support Console</span>
+      {/* Global Toast Notifications */}
+      <AnimatePresence>
+        {notification.message && (
+          <motion.div
+            initial={{ opacity: 0, y: -20, x: "-50%" }}
+            animate={{ opacity: 1, y: 0, x: "-50%" }}
+            exit={{ opacity: 0, y: -20, x: "-50%" }}
+            className="fixed top-6 left-1/2 z-50 max-w-md w-full px-4"
+          >
+            <div
+              className={`p-4 rounded-xl shadow-2xl border backdrop-blur-xl flex items-start gap-3 ${notification.type === "success"
+                  ? "bg-brand-surface border-brand-success/30 text-brand-success"
+                  : "bg-brand-surface border-brand-danger/30 text-brand-danger"
+                }`}
+            >
+              {notification.type === "success" ? (
+                <CheckCircle className="w-4 h-4 shrink-0 mt-0.5" />
+              ) : (
+                <AlertCircle className="w-4 h-4 shrink-0 mt-0.5" />
+              )}
+              <p className="flex-1 text-xs font-medium leading-normal">{notification.message}</p>
             </div>
-            <div className="flex items-center gap-4">
-              <button
-                onClick={() => setDarkMode(!darkMode)}
-                className={`p-2 rounded-xl border transition-colors ${darkMode ? "bg-slate-900 border-slate-800 hover:bg-slate-850" : "bg-slate-100 border-slate-200 hover:bg-slate-200"
-                  }`}
-                title="Toggle Theme"
-              >
-                {darkMode ? "☀️" : "🌙"}
-              </button>
-              <button
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* Navigation Header */}
+      <nav className="border-b bg-brand-surface/40 border-brand-border/40 sticky top-0 z-40 backdrop-blur-md">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="flex justify-between h-14 items-center">
+            <div className="flex items-center gap-2.5">
+              <div className="w-6 h-6 rounded-md bg-brand-primary/10 border border-brand-primary/20 flex items-center justify-center text-brand-primary text-xs font-black">
+                <BrainCircuit className="w-3.5 h-3.5" />
+              </div>
+              <span className="font-semibold tracking-tight text-sm text-brand-text-primary">
+                AI Operations Dashboard
+              </span>
+            </div>
+            <div className="flex items-center gap-3">
+              <span className="hidden md:inline-flex items-center gap-1 px-3 py-1 bg-brand-elevated/20 text-brand-text-secondary rounded-full border border-brand-border/40 text-[10px] font-semibold uppercase tracking-wider">
+                <Activity className="w-3 h-3 text-brand-success" />
+                Staff Admin mode
+              </span>
+              <motion.button
+                whileTap={{ scale: 0.98 }}
                 onClick={handleLogout}
-                className="px-4 py-2 bg-rose-600/10 hover:bg-rose-600 text-rose-500 hover:text-white border border-rose-500/20 text-sm font-bold rounded-xl transition duration-155"
+                className="px-3 py-1.5 bg-brand-elevated/40 hover:bg-brand-elevated text-brand-text-primary hover:text-white border border-brand-border/60 hover:border-brand-border text-[11px] font-semibold rounded-lg transition duration-150 flex items-center gap-1.5 cursor-pointer"
               >
+                <LogOut className="w-3 h-3 text-brand-text-secondary" />
                 Logout
-              </button>
+              </motion.button>
             </div>
           </div>
         </div>
@@ -541,112 +583,100 @@ function App() {
         {analytics && (
           <div className="space-y-8">
 
-            {/* Metric Panel Grid */}
+            {/* Executive Metric Cards */}
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-5">
-              <div className={`p-6 rounded-2xl border shadow-xs ${darkMode ? "bg-slate-900/40 border-slate-900" : "bg-white border-slate-200"}`}>
-                <h2 className="text-xs font-bold uppercase tracking-wider text-slate-400 mb-1">Total Tickets</h2>
-                <p className="text-3xl font-extrabold tracking-tight">{analytics.total_tickets}</p>
-              </div>
-
-              <div className={`p-6 rounded-2xl border shadow-xs ${darkMode ? "bg-slate-900/40 border-slate-900" : "bg-white border-slate-200"}`}>
-                <h2 className="text-xs font-bold uppercase tracking-wider text-slate-400 mb-1">High Priority</h2>
-                <p className="text-3xl font-extrabold tracking-tight text-rose-500">{analytics.high_priority_tickets}</p>
-              </div>
-
-              <div className={`p-6 rounded-2xl border shadow-xs ${darkMode ? "bg-slate-900/40 border-slate-900" : "bg-white border-slate-200"}`}>
-                <h2 className="text-xs font-bold uppercase tracking-wider text-slate-400 mb-1">System Status</h2>
-                <p className="text-3xl font-extrabold tracking-tight text-emerald-500">{analytics.system_status}</p>
-              </div>
-
-              <div className={`p-6 rounded-2xl border shadow-xs ${darkMode ? "bg-slate-900/40 border-slate-900" : "bg-white border-slate-200"}`}>
-                <h2 className="text-xs font-bold uppercase tracking-wider text-slate-400 mb-1">Assigned</h2>
-                <p className="text-3xl font-extrabold tracking-tight text-indigo-500">{assignedTickets}</p>
-              </div>
-
-              <div className={`p-6 rounded-2xl border shadow-xs ${darkMode ? "bg-slate-900/40 border-slate-900" : "bg-white border-slate-200"}`}>
-                <h2 className="text-xs font-bold uppercase tracking-wider text-slate-400 mb-1">Unassigned</h2>
-                <p className="text-3xl font-extrabold tracking-tight text-amber-500">{unassignedTickets}</p>
-              </div>
+              {[
+                { label: "Total Tickets", val: analytics.total_tickets, desc: "Cumulative volume", color: "text-brand-text-primary" },
+                { label: "High Priority", val: analytics.high_priority_tickets, desc: "Critical escalations", color: "text-brand-danger" },
+                { label: "Triage Engine", val: analytics.system_status, desc: "AI Gateway classification", color: "text-brand-success" },
+                { label: "Assigned Staff", val: assignedTickets, desc: "In-progress ownership", color: "text-brand-primary" },
+                { label: "Unassigned Queue", val: unassignedTickets, desc: "Awaiting intervention", color: "text-brand-warning" }
+              ].map((card, idx) => (
+                <div key={idx} className="bg-brand-surface border border-brand-border/60 rounded-xl p-5 shadow-sm">
+                  <h2 className="text-[10px] font-bold uppercase tracking-wider text-brand-text-secondary mb-1">
+                    {card.label}
+                  </h2>
+                  <p className={`text-2xl font-bold tracking-tight ${card.color}`}>{card.val}</p>
+                  <span className="text-[9px] text-brand-text-secondary/50 mt-1 block">{card.desc}</span>
+                </div>
+              ))}
             </div>
 
-            {/* Operations Analytics */}
+            {/* Operations Metrics */}
             {operationsAnalytics && (
-              <div className="mt-8 space-y-4">
-                <h2 className="text-2xl font-bold tracking-tight">Operations Analytics</h2>
+              <div className="space-y-4">
+                <h2 className="text-sm font-semibold tracking-tight text-brand-text-primary flex items-center gap-1.5">
+                  <TrendingUp className="w-4 h-4 text-brand-primary" />
+                  Performance Analytics Overview
+                </h2>
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-5">
-                  <div className={`p-6 rounded-2xl border shadow-xs ${darkMode ? "bg-slate-900/40 border-slate-900" : "bg-white border-slate-200"}`}>
-                    <h3 className="text-xs font-bold uppercase tracking-wider text-slate-400 mb-1">Avg Resolution</h3>
-                    <p className="text-3xl font-extrabold tracking-tight text-indigo-400">
-                      {operationsAnalytics.avg_resolution_hours}h
-                    </p>
-                  </div>
-
-                  <div className={`p-6 rounded-2xl border shadow-xs ${darkMode ? "bg-slate-900/40 border-slate-900" : "bg-white border-slate-200"}`}>
-                    <h3 className="text-xs font-bold uppercase tracking-wider text-slate-400 mb-1">Top Department</h3>
-                    <p className="text-3xl font-extrabold tracking-tight text-purple-400 truncate" title={operationsAnalytics.top_department}>
-                      {operationsAnalytics.top_department}
-                    </p>
-                  </div>
-
-                  <div className={`p-6 rounded-2xl border shadow-xs ${darkMode ? "bg-slate-900/40 border-slate-900" : "bg-white border-slate-200"}`}>
-                    <h3 className="text-xs font-bold uppercase tracking-wider text-slate-400 mb-1">Top Urgency</h3>
-                    <p className="text-3xl font-extrabold tracking-tight text-amber-500">
-                      {operationsAnalytics.most_common_urgency}
-                    </p>
-                  </div>
-
-                  <div className={`p-6 rounded-2xl border shadow-xs ${darkMode ? "bg-slate-900/40 border-slate-900" : "bg-white border-slate-200"}`}>
-                    <h3 className="text-xs font-bold uppercase tracking-wider text-slate-400 mb-1">Resolved Today</h3>
-                    <p className="text-3xl font-extrabold tracking-tight text-emerald-500">
-                      {operationsAnalytics.resolved_today}
-                    </p>
-                  </div>
+                  {[
+                    { label: "Avg Resolution Time", val: `${operationsAnalytics.avg_resolution_hours} Hours`, color: "text-indigo-400" },
+                    { label: "Top Department", val: operationsAnalytics.top_department, color: "text-purple-400" },
+                    { label: "Most Common Urgency", val: operationsAnalytics.most_common_urgency, color: "text-brand-warning" },
+                    { label: "Resolved Today", val: operationsAnalytics.resolved_today, color: "text-brand-success" }
+                  ].map((stat, i) => (
+                    <div key={i} className="bg-brand-surface/70 border border-brand-border/40 rounded-xl p-5 shadow-xs">
+                      <h3 className="text-[10px] font-bold uppercase tracking-wider text-brand-text-secondary mb-1">
+                        {stat.label}
+                      </h3>
+                      <p className={`text-lg font-bold truncate ${stat.color}`} title={stat.val}>
+                        {stat.val}
+                      </p>
+                    </div>
+                  ))}
                 </div>
 
-                {/* Weekly Performance */}
-                <div className={`p-5 rounded-2xl border shadow-xs ${darkMode ? "bg-slate-900/40 border-slate-900" : "bg-white border-slate-200"}`}>
-                  <h3 className="text-sm font-bold tracking-tight mb-2">Weekly Performance</h3>
-                  <p className="text-xs text-slate-400">
-                    Tickets Resolved This Week:{" "}
-                    <span className="font-mono font-bold text-sm text-indigo-400">
+                {/* Weekly Performance Banner */}
+                <div className="bg-brand-surface/40 border border-brand-border/40 rounded-xl p-4 flex justify-between items-center text-xs">
+                  <span className="text-brand-text-secondary font-medium">Weekly Performance metrics</span>
+                  <div className="flex items-center gap-1.5">
+                    <span className="text-brand-text-secondary">Resolved This Week:</span>
+                    <span className="font-mono font-bold px-2 py-0.5 bg-brand-primary/10 border border-brand-primary/20 text-brand-primary rounded">
                       {operationsAnalytics.resolved_this_week}
                     </span>
-                  </p>
+                  </div>
                 </div>
               </div>
             )}
 
-            {/* Live Activity Feed */}
+            {/* Live Console Logs Activity Stream */}
             {activityFeed.length > 0 && (
-              <div className={`rounded-2xl p-6 border shadow-sm ${darkMode ? "bg-slate-900/40 border-slate-900" : "bg-white border-slate-200"}`}>
+              <div className="bg-brand-surface border border-brand-border/60 rounded-xl p-5 shadow-md">
                 <div className="flex items-center gap-2 mb-4">
-                  <span className="w-2.5 h-2.5 bg-emerald-500 rounded-full animate-pulse"></span>
-                  <h2 className="text-base font-bold tracking-tight">Live Console Activity</h2>
+                  <span className="w-2 h-2 bg-brand-success rounded-full animate-pulse"></span>
+                  <h2 className="text-xs font-bold uppercase tracking-wider text-brand-text-primary">
+                    Realtime Event Feed (SSE)
+                  </h2>
                 </div>
-                <div className="space-y-2 max-h-48 overflow-y-auto pr-2">
+                <div className="space-y-2 max-h-40 overflow-y-auto pr-1">
                   {activityFeed.map((item, index) => (
                     <div
                       key={index}
-                      className={`py-2 px-3 rounded-lg text-xs font-mono flex items-center justify-between border ${darkMode ? "bg-slate-950/50 border-slate-900/50 text-slate-400" : "bg-slate-50/50 border-slate-100 text-slate-650"
-                        }`}
+                      className="py-2 px-3 bg-brand-bg border border-brand-border/40 rounded-lg text-[10px] font-mono flex items-center justify-between text-brand-text-secondary hover:border-brand-border transition duration-150"
                     >
                       <div className="flex items-center gap-2">
-                        <span className="text-slate-500">[{item.time}]</span>
-                        <span className="font-bold text-indigo-400">{item.event.toUpperCase()}</span>
-                        <span>Ticket #{item.ticketId}</span>
+                        <span className="text-brand-text-secondary/40">[{item.time}]</span>
+                        <span className="font-bold text-brand-primary uppercase">{item.event}</span>
+                        <span>Ticket ID: #{item.ticketId}</span>
                       </div>
-                      <span className="text-[10px] bg-indigo-500/10 text-indigo-400 border border-indigo-500/25 px-1.5 py-0.5 rounded">Realtime</span>
+                      <span className="text-[9px] bg-brand-primary/10 text-brand-primary border border-brand-primary/25 px-1.5 py-0.5 rounded">
+                        Streaming
+                      </span>
                     </div>
                   ))}
                 </div>
               </div>
             )}
 
-            {/* Recharts Analytics Charts */}
+            {/* Chart Plots */}
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-              <div className={`rounded-2xl border shadow-sm p-6 ${darkMode ? "bg-slate-900/40 border-slate-900" : "bg-white border-slate-200"}`}>
-                <h2 className="text-base font-bold tracking-tight mb-6">Priority Distribution</h2>
-                <div className="h-64">
+              <div className="bg-brand-surface border border-brand-border/60 rounded-xl p-5 shadow-sm">
+                <h2 className="text-xs font-bold uppercase tracking-wider text-brand-text-primary mb-4 flex items-center gap-1.5">
+                  <BarChart3 className="w-4 h-4 text-brand-primary" />
+                  Priority Weight Distribution
+                </h2>
+                <div className="h-56">
                   <ResponsiveContainer width="100%" height="100%">
                     <PieChart>
                       <Pie
@@ -655,259 +685,287 @@ function App() {
                         cy="50%"
                         labelLine={false}
                         label={({ name, value }) => `${name}: ${value}`}
-                        outerRadius={80}
+                        outerRadius={70}
                         dataKey="value"
                       >
                         {priorityData.map((entry, index) => (
-                          <Cell key={`cell-${index}`} fill={COLORS[index]} />
+                          <Cell key={`cell-${index}`} fill={CHART_COLORS[index]} />
                         ))}
                       </Pie>
-                      <Tooltip contentStyle={{ background: darkMode ? "#0f172a" : "#ffffff", border: `1px solid ${darkMode ? "#1e293b" : "#e2e8f0"}`, borderRadius: "12px", color: darkMode ? "#f8fafc" : "#0f172a" }} />
-                      <Legend />
+                      <Tooltip
+                        contentStyle={{
+                          background: "#18181b",
+                          border: "1px solid #3f3f46",
+                          borderRadius: "8px",
+                          fontSize: "11px",
+                          color: "#fafafa"
+                        }}
+                      />
+                      <Legend verticalAlign="bottom" height={36} wrapperStyle={{ fontSize: "11px" }} />
                     </PieChart>
                   </ResponsiveContainer>
                 </div>
               </div>
 
-              <div className={`rounded-2xl border shadow-sm p-6 ${darkMode ? "bg-slate-900/40 border-slate-900" : "bg-white border-slate-200"}`}>
-                <h2 className="text-base font-bold tracking-tight mb-6">Volume Analysis</h2>
-                <div className="h-64">
+              <div className="bg-brand-surface border border-brand-border/60 rounded-xl p-5 shadow-sm">
+                <h2 className="text-xs font-bold uppercase tracking-wider text-brand-text-primary mb-4 flex items-center gap-1.5">
+                  <BarChart3 className="w-4 h-4 text-brand-primary" />
+                  Volume Load metrics
+                </h2>
+                <div className="h-56">
                   <ResponsiveContainer width="100%" height="100%">
                     <BarChart data={priorityData}>
-                      <CartesianGrid strokeDasharray="3 3" stroke={darkMode ? "#1e293b" : "#f1f5f9"} />
-                      <XAxis dataKey="name" stroke="#94a3b8" fontSize={11} />
-                      <YAxis stroke="#94a3b8" fontSize={11} />
-                      <Tooltip contentStyle={{ background: darkMode ? "#0f172a" : "#ffffff", border: `1px solid ${darkMode ? "#1e293b" : "#e2e8f0"}`, borderRadius: "12px", color: darkMode ? "#f8fafc" : "#0f172a" }} />
-                      <Legend />
-                      <Bar dataKey="value" fill="#6366f1" radius={[4, 4, 0, 0]} />
+                      <CartesianGrid strokeDasharray="3 3" stroke="#27272a" />
+                      <XAxis dataKey="name" stroke="#a1a1aa" fontSize={10} />
+                      <YAxis stroke="#a1a1aa" fontSize={10} />
+                      <Tooltip
+                        contentStyle={{
+                          background: "#18181b",
+                          border: "1px solid #3f3f46",
+                          borderRadius: "8px",
+                          fontSize: "11px",
+                          color: "#fafafa"
+                        }}
+                      />
+                      <Legend verticalAlign="bottom" height={36} wrapperStyle={{ fontSize: "11px" }} />
+                      <Bar dataKey="value" fill="#6366f1" radius={[4, 4, 0, 0]} name="Ticket Count" />
                     </BarChart>
                   </ResponsiveContainer>
                 </div>
               </div>
             </div>
 
-            {/* AI Knowledge Base */}
-            <div className={`mt-8 p-6 rounded-xl border ${darkMode ? "bg-slate-900/40 border-slate-800" : "bg-white border-slate-250"}`}>
-              <h2 className="text-2xl font-bold mb-4">AI Knowledge Base</h2>
+            {/* Knowledge Base */}
+            <div className="bg-brand-surface border border-brand-border/60 rounded-xl p-5 shadow-sm">
+              <h2 className="text-xs font-bold uppercase tracking-wider text-brand-text-primary mb-4 flex items-center gap-1.5">
+                <BookOpen className="w-4 h-4 text-brand-primary" />
+                AI Knowledge Ingestion Manager
+              </h2>
 
-              <input
-                type="text"
-                placeholder="Knowledge Title"
-                value={knowledgeTitle}
-                onChange={(e) => setKnowledgeTitle(e.target.value)}
-                className={`border p-2 w-full mb-3 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition duration-150 ${
-                  darkMode ? "bg-slate-950 border-slate-800 text-white placeholder-slate-600" : "bg-white border-slate-300 text-slate-850 placeholder-slate-400"
-                }`}
-              />
+              <div className="space-y-3">
+                <input
+                  type="text"
+                  placeholder="Knowledge Base Article Title"
+                  value={knowledgeTitle}
+                  onChange={(e) => setKnowledgeTitle(e.target.value)}
+                  className="w-full px-3 py-2 bg-brand-bg border border-brand-border/60 hover:border-brand-border rounded-lg text-brand-text-primary text-xs focus:outline-none focus:ring-1 focus:ring-brand-primary focus:border-brand-primary transition placeholder:text-brand-text-secondary/35"
+                />
 
-              <textarea
-                placeholder="Knowledge Content"
-                value={knowledgeContent}
-                onChange={(e) => setKnowledgeContent(e.target.value)}
-                className={`border p-2 w-full h-32 mb-3 rounded-xl text-xs focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition duration-150 resize-none ${
-                  darkMode ? "bg-slate-950 border-slate-800 text-white placeholder-slate-700" : "bg-white border-slate-200 text-black placeholder-slate-400"
-                }`}
-              />
+                <textarea
+                  placeholder="Knowledge content description context..."
+                  value={knowledgeContent}
+                  onChange={(e) => setKnowledgeContent(e.target.value)}
+                  rows={3}
+                  className="w-full px-3 py-2 bg-brand-bg border border-brand-border/60 hover:border-brand-border rounded-lg text-brand-text-primary text-xs focus:outline-none focus:ring-1 focus:ring-brand-primary focus:border-brand-primary transition placeholder:text-brand-text-secondary/35 resize-none"
+                />
 
-              <button
-                onClick={addKnowledge}
-                className="bg-green-600 text-white px-4 py-2 rounded-xl text-xs font-bold shadow-md transition transform active:scale-95 cursor-pointer"
-              >
-                Add Knowledge
-              </button>
+                <motion.button
+                  whileTap={{ scale: 0.98 }}
+                  onClick={addKnowledge}
+                  className="bg-brand-primary hover:bg-brand-primary/95 text-white px-4 py-2 rounded-lg text-xs font-semibold shadow transition cursor-pointer"
+                >
+                  Ingest Article context
+                </motion.button>
+              </div>
 
-              <div className="mt-6">
-                <h3 className="text-lg font-bold mb-3">Existing Knowledge</h3>
+              <div className="mt-8">
+                <h3 className="text-xs font-bold uppercase tracking-wider text-brand-text-secondary mb-3">
+                  Ingested Knowledge Base Contexts ({knowledge.length})
+                </h3>
                 {knowledge.length === 0 ? (
-                  <p className="text-xs text-slate-500 italic py-2">No knowledge articles found.</p>
+                  <p className="text-xs text-brand-text-secondary/50 italic py-2">No contexts ingested yet.</p>
                 ) : (
-                  knowledge.map((item) => (
-                    <div
-                      key={item.id}
-                      className={`border p-4 rounded-xl mb-3 ${
-                        darkMode ? "bg-slate-950/40 border-slate-850" : "bg-slate-50 border-slate-150"
-                      }`}
-                    >
-                      <h4 className="font-bold text-indigo-400">{item.title}</h4>
-                      <p className="mt-2 text-sm text-slate-500 dark:text-slate-400 leading-relaxed">
-                        {item.content}
-                      </p>
-                      <button
-                        onClick={() => deleteKnowledge(item.id)}
-                        className="bg-red-600 text-white px-3 py-1 rounded-lg text-xs font-bold shadow-md transition transform active:scale-95 cursor-pointer mt-3"
+                  <div className="space-y-3 max-h-[300px] overflow-y-auto pr-1">
+                    {knowledge.map((item) => (
+                      <div
+                        key={item.id}
+                        className="border border-brand-border/60 bg-brand-bg/40 p-4 rounded-xl flex justify-between items-start gap-4"
                       >
-                        Delete
-                      </button>
-                    </div>
-                  ))
+                        <div className="space-y-1">
+                          <h4 className="font-semibold text-xs text-brand-primary">{item.title}</h4>
+                          <p className="text-[11px] text-brand-text-secondary leading-normal">
+                            {item.content}
+                          </p>
+                        </div>
+                        <motion.button
+                          whileTap={{ scale: 0.98 }}
+                          onClick={() => deleteKnowledge(item.id)}
+                          className="bg-brand-danger/10 border border-brand-danger/20 hover:bg-brand-danger hover:text-white text-brand-danger p-1.5 rounded transition cursor-pointer"
+                          title="Purge context"
+                        >
+                          <Trash2 className="w-3.5 h-3.5" />
+                        </motion.button>
+                      </div>
+                    ))}
+                  </div>
                 )}
               </div>
             </div>
 
-            {/* Live Tickets Table */}
-            <div className={`rounded-2xl border shadow-sm p-6 overflow-hidden ${darkMode ? "bg-slate-900/40 border-slate-900" : "bg-white border-slate-200"}`}>
-              <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
-                <h2 className="text-lg font-bold tracking-tight">Active Ticket Stream</h2>
-                <div className="flex gap-2">
-                  <button
-                    onClick={() => setTicketFilter("all")}
-                    className={`px-4 py-2 rounded-xl text-xs font-bold transition-all duration-150 ${ticketFilter === "all"
-                        ? "bg-indigo-600 text-white shadow-md"
-                        : darkMode ? "bg-slate-900 hover:bg-slate-800 text-slate-400" : "bg-slate-100 hover:bg-slate-200 text-slate-650"
-                      }`}
-                  >
-                    All
-                  </button>
-                  <button
-                    onClick={() => setTicketFilter("mine")}
-                    className={`px-4 py-2 rounded-xl text-xs font-bold transition-all duration-150 ${ticketFilter === "mine"
-                        ? "bg-indigo-600 text-white shadow-md"
-                        : darkMode ? "bg-slate-900 hover:bg-slate-800 text-slate-400" : "bg-slate-100 hover:bg-slate-200 text-slate-650"
-                      }`}
-                  >
-                    Assigned to Me
-                  </button>
-                  <button
-                    onClick={() => setTicketFilter("unassigned")}
-                    className={`px-4 py-2 rounded-xl text-xs font-bold transition-all duration-150 ${ticketFilter === "unassigned"
-                        ? "bg-indigo-600 text-white shadow-md"
-                        : darkMode ? "bg-slate-900 hover:bg-slate-800 text-slate-400" : "bg-slate-100 hover:bg-slate-200 text-slate-650"
-                      }`}
-                  >
-                    Unassigned
-                  </button>
+            {/* Active Ticket Stream Table */}
+            <div className="bg-brand-surface border border-brand-border/60 rounded-xl p-5 shadow-md">
+              <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6 border-b border-brand-border/40 pb-4">
+                <div>
+                  <h2 className="text-sm font-semibold tracking-tight text-brand-text-primary">
+                    Active Ticket Queue Stream
+                  </h2>
+                  <p className="text-[11px] text-brand-text-secondary mt-0.5">
+                    Realtime autonomous classification log stream
+                  </p>
+                </div>
+                <div className="flex bg-brand-bg/50 border border-brand-border/40 p-1 rounded-lg gap-1">
+                  {[
+                    { key: "all", label: "All Queue" },
+                    { key: "mine", label: "My Desk" },
+                    { key: "unassigned", label: "Unallocated" }
+                  ].map((tab) => (
+                    <button
+                      key={tab.key}
+                      onClick={() => setTicketFilter(tab.key)}
+                      className={`px-3 py-1 rounded-md text-[10px] font-semibold transition-all duration-150 cursor-pointer ${ticketFilter === tab.key
+                          ? "bg-brand-elevated text-brand-text-primary shadow-sm"
+                          : "text-brand-text-secondary hover:text-brand-text-primary"
+                        }`}
+                    >
+                      {tab.label}
+                    </button>
+                  ))}
                 </div>
               </div>
 
               {/* Filters Dock */}
               <div className="flex flex-col sm:flex-row gap-4 mb-6">
                 <div className="relative flex-1">
+                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-brand-text-secondary/50" />
                   <input
                     type="text"
-                    placeholder="Search tickets by subject or sender..."
+                    placeholder="Search query by sender or description..."
                     value={searchTerm}
                     onChange={(e) => setSearchTerm(e.target.value)}
-                    className={`w-full pl-4 pr-10 py-2.5 rounded-xl border text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition duration-150 ${darkMode ? "bg-slate-950 border-slate-800 text-white placeholder-slate-600" : "bg-white border-slate-300 placeholder-slate-450"
-                      }`}
+                    className="w-full pl-9 pr-4 py-2 bg-brand-bg border border-brand-border/60 hover:border-brand-border rounded-lg text-brand-text-primary text-xs focus:outline-none focus:ring-1 focus:ring-brand-primary focus:border-brand-primary transition placeholder:text-brand-text-secondary/35"
                   />
                 </div>
 
-                <select
-                  value={urgencyFilter}
-                  onChange={(e) => setUrgencyFilter(e.target.value)}
-                  className={`border rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition duration-150 ${darkMode ? "bg-slate-950 border-slate-800 text-slate-300" : "bg-white border-slate-300 text-slate-750"
-                    }`}
-                >
-                  <option value="All">All Priorities</option>
-                  <option value="High">High</option>
-                  <option value="Medium">Medium</option>
-                  <option value="Low">Low</option>
-                </select>
+                <div className="flex items-center gap-2 shrink-0">
+                  <Filter className="w-3.5 h-3.5 text-brand-text-secondary" />
+                  <select
+                    value={urgencyFilter}
+                    onChange={(e) => setUrgencyFilter(e.target.value)}
+                    className="bg-brand-bg border border-brand-border/60 hover:border-brand-border rounded-lg px-3 py-2 text-xs focus:outline-none text-brand-text-primary cursor-pointer transition font-medium"
+                  >
+                    <option value="All">All Priorities</option>
+                    <option value="High">High Priority</option>
+                    <option value="Medium">Medium</option>
+                    <option value="Low">Low Priority</option>
+                  </select>
+                </div>
               </div>
 
-              {/* Table Render */}
+              {/* High Density Table */}
               <div className="overflow-x-auto">
-                <table className="min-w-full text-left text-sm border-collapse">
+                <table className="min-w-full text-left text-xs border-collapse">
                   <thead>
-                    <tr className={`border-b text-xs font-bold uppercase tracking-wider ${darkMode ? "border-slate-800/80 text-slate-500" : "border-slate-200/80 text-slate-450"
-                      }`}>
-                      <th className="p-4">Sender</th>
-                      <th className="p-4">Subject</th>
-                      <th className="p-4">Attachment</th>
-                      <th className="p-4">Urgency</th>
-                      <th className="p-4">Department</th>
-                      <th className="p-4">Sentiment</th>
-                      <th className="p-4">Action Summary</th>
-                      <th className="p-4">Resolution Note</th>
-                      <th className="p-4">Assignee</th>
-                      <th className="p-4">Status</th>
-                      <th className="p-4 text-center">Control</th>
+                    <tr className="border-b border-brand-border/40 text-[10px] font-bold uppercase tracking-wider text-brand-text-secondary/70">
+                      <th className="p-3">Sender</th>
+                      <th className="p-3">Subject</th>
+                      <th className="p-3">Attachment</th>
+                      <th className="p-3">Priority</th>
+                      <th className="p-3">Classification</th>
+                      <th className="p-3">Sentiment</th>
+                      <th className="p-3">AI Action taken</th>
+                      <th className="p-3">Resolution Note</th>
+                      <th className="p-3">Ownership</th>
+                      <th className="p-3">State</th>
+                      <th className="p-3 text-center">Controls</th>
                     </tr>
                   </thead>
                   <tbody>
                     {displayedTickets.length === 0 ? (
                       <tr>
-                        <td colSpan="11" className="p-8 text-center text-slate-500">No active tickets fit the active filters.</td>
+                        <td colSpan="11" className="p-8 text-center text-brand-text-secondary/50 italic">
+                          No active tickets fit the active filters.
+                        </td>
                       </tr>
                     ) : (
                       displayedTickets.map((ticket) => (
                         <tr
                           key={ticket.id}
-                          className={`border-b transition-colors duration-150 ${darkMode ? "border-slate-900/60 hover:bg-slate-900/30" : "border-slate-100 hover:bg-slate-50/50"
-                            }`}
+                          className="border-b border-brand-border/30 hover:bg-brand-surface/30 transition duration-150"
                         >
-                          <td className="p-4 font-semibold text-xs truncate max-w-xs">{ticket.sender}</td>
-                          <td className="p-4 text-xs font-medium max-w-[180px] truncate" title={ticket.subject}>
-                            <span className="flex items-center gap-1.5 flex-wrap">
+                          <td className="p-3 font-semibold truncate max-w-[120px]" title={ticket.sender}>
+                            {ticket.sender}
+                          </td>
+                          <td className="p-3 font-medium max-w-[150px] truncate" title={ticket.subject}>
+                            <span className="flex items-center gap-1.5">
                               {ticket.subject}
                               {getUnreadCount(ticket) > 0 && (
-                                <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full text-[8px] font-bold bg-rose-500/10 text-rose-500 border border-rose-500/20 animate-pulse">
-                                  🔴 {getUnreadCount(ticket)} new
+                                <span className="inline-flex items-center gap-1 px-1.5 py-0.2 bg-brand-danger/10 text-brand-danger border border-brand-danger/20 rounded-full text-[8px] font-bold animate-pulse">
+                                  {getUnreadCount(ticket)} new
                                 </span>
                               )}
                             </span>
                           </td>
-                          <td className="p-4">
+                          <td className="p-3">
                             {ticket.attachment_url ? (
                               <a
                                 href={ticket.attachment_url}
                                 target="_blank"
                                 rel="noreferrer"
-                                className="text-blue-500 underline"
+                                className="inline-flex items-center gap-1 text-brand-primary hover:underline"
                               >
                                 View File
+                                <ExternalLink className="w-2.5 h-2.5" />
                               </a>
                             ) : (
-                              <span className="text-gray-400">None</span>
+                              <span className="text-brand-text-secondary/40">None</span>
                             )}
                           </td>
-                          <td className="p-4">
-                            <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold ${ticket.urgency === "High"
-                                ? "bg-rose-500/10 text-rose-500 border border-rose-500/20"
+                          <td className="p-3">
+                            <span className={`px-2 py-0.5 rounded-full text-[9px] font-bold ${ticket.urgency === "High"
+                                ? "bg-brand-danger/10 text-brand-danger border border-brand-danger/20"
                                 : ticket.urgency === "Medium"
-                                  ? "bg-amber-500/10 text-amber-500 border border-amber-500/20"
-                                  : "bg-emerald-500/10 text-emerald-500 border border-emerald-500/20"
+                                  ? "bg-brand-warning/10 text-brand-warning border border-brand-warning/20"
+                                  : "bg-brand-success/10 text-brand-success border border-brand-success/20"
                               }`}>
                               {ticket.urgency || "Low"}
                             </span>
                           </td>
-                          <td className="p-4 font-bold text-xs text-indigo-400">{ticket.department}</td>
-                          <td className="p-4 italic text-xs text-slate-400">{ticket.sentiment || "Neutral"}</td>
-                          <td className="p-4 max-w-xs truncate">
-                            <span className={`px-2 py-0.5 rounded text-[10px] font-mono ${ticket.action_taken?.includes("[MANUAL OVERRIDE]")
-                                ? "bg-amber-500/15 text-amber-400 border border-amber-500/25"
-                                : "bg-slate-800/40 text-slate-400 border border-slate-700/30"
+                          <td className="p-3 font-semibold text-brand-primary">{ticket.department}</td>
+                          <td className="p-3 italic text-brand-text-secondary">{ticket.sentiment || "Neutral"}</td>
+                          <td className="p-3 max-w-[160px] truncate" title={ticket.action_taken}>
+                            <span className={`px-2 py-0.5 rounded text-[9px] font-mono ${ticket.action_taken?.includes("[MANUAL OVERRIDE]")
+                                ? "bg-brand-warning/10 text-brand-warning border border-brand-warning/20"
+                                : "bg-brand-elevated/40 text-brand-text-secondary border border-brand-border/40"
                               }`}>
                               {ticket.action_taken || "Awaiting triage..."}
                             </span>
                           </td>
-                          <td className="p-4 max-w-xs">
-                            <div className={`text-xs truncate ${ticket.resolution_note ? "text-emerald-500 font-semibold" : "text-slate-500"}`}>
+                          <td className="p-3 max-w-[120px] truncate" title={ticket.resolution_note}>
+                            <span className={`font-medium ${ticket.resolution_note ? "text-brand-success" : "text-brand-text-secondary/40"}`}>
                               {ticket.resolution_note || "None"}
-                            </div>
+                            </span>
                           </td>
-                          <td className="p-4">
+                          <td className="p-3">
                             <select
                               value={ticket.assigned_to || ""}
                               onChange={(e) => assignTicket(ticket.id, e.target.value)}
-                              className={`border rounded-lg px-2 py-1 text-xs focus:outline-none focus:ring-2 focus:ring-indigo-500/25 ${darkMode ? "bg-slate-950 border-slate-850 text-slate-300" : "bg-white border-slate-300 text-slate-750"
-                                }`}
+                              className="bg-brand-bg border border-brand-border/60 hover:border-brand-border rounded px-1.5 py-1 text-[10px] focus:outline-none text-brand-text-primary cursor-pointer transition font-medium"
                             >
                               <option value="">Unassigned</option>
                               <option value="admin@gmail.com">admin@gmail.com</option>
                             </select>
                           </td>
-                          <td className="p-4">
+                          <td className="p-3">
                             <select
                               value={ticket.status || "Open"}
                               onChange={(e) => updateStatus(ticket.id, e.target.value)}
-                              className={`border rounded-lg px-2 py-1 text-xs font-bold focus:outline-none focus:ring-2 focus:ring-indigo-500/25 ${ticket.status === "Resolved"
-                                  ? "bg-emerald-550/10 text-emerald-400 border-emerald-500/20"
+                              className={`bg-brand-bg border border-brand-border/60 hover:border-brand-border rounded px-1.5 py-1 text-[10px] focus:outline-none cursor-pointer transition font-bold ${ticket.status === "Resolved"
+                                  ? "text-brand-success"
                                   : ticket.status === "In Progress"
-                                    ? "bg-amber-550/10 text-amber-400 border-amber-500/20"
+                                    ? "text-brand-warning"
                                     : ticket.status === "Open"
-                                      ? "bg-rose-550/10 text-rose-400 border-rose-500/20"
-                                      : "bg-slate-850 text-slate-400 border-slate-700/20"
+                                      ? "text-brand-danger"
+                                      : "text-brand-text-secondary"
                                 }`}
                             >
                               <option value="Open">Open</option>
@@ -916,24 +974,26 @@ function App() {
                               <option value="Closed">Closed</option>
                             </select>
                           </td>
-                          <td className="p-4 text-center">
-                            <div className="flex flex-col sm:flex-row justify-center items-center gap-2">
-                              <button
+                          <td className="p-3 text-center">
+                            <div className="flex gap-2 justify-center">
+                              <motion.button
+                                whileTap={{ scale: 0.98 }}
                                 onClick={() => openOverrideModal(ticket)}
-                                className="px-3 py-1.5 bg-indigo-650 hover:bg-indigo-700 text-white font-bold text-xs rounded-lg shadow-sm transition transform hover:scale-[1.02] active:scale-[0.98] cursor-pointer"
+                                className="px-2 py-1 bg-brand-primary hover:bg-brand-primary/95 text-white font-bold text-[10px] rounded transition cursor-pointer shadow-xs"
                               >
                                 Intervene
-                              </button>
-                              <button
+                              </motion.button>
+                              <motion.button
+                                whileTap={{ scale: 0.98 }}
                                 onClick={() => {
                                   setSelectedCommentTicket(ticket);
                                   loadComments(ticket.id);
                                   setAiReply("");
                                 }}
-                                className="px-3 py-1.5 bg-slate-150 hover:bg-slate-200 dark:bg-slate-900 dark:hover:bg-slate-800 text-slate-800 dark:text-slate-200 font-bold text-xs rounded-lg shadow-sm transition transform hover:scale-[1.02] active:scale-[0.98] cursor-pointer"
+                                className="px-2 py-1 bg-brand-elevated/40 hover:bg-brand-elevated text-brand-text-primary border border-brand-border/60 hover:border-brand-border font-bold text-[10px] rounded transition cursor-pointer"
                               >
-                                Conversation
-                              </button>
+                                Discuss
+                              </motion.button>
                             </div>
                           </td>
                         </tr>
@@ -944,259 +1004,330 @@ function App() {
               </div>
             </div>
 
-            {/* Conversation Panel */}
-            {selectedCommentTicket && (
-              <div className={`rounded-2xl border shadow-sm p-6 mt-6 ${darkMode ? "bg-slate-900/40 border-slate-900 text-slate-100" : "bg-white border-slate-200 text-slate-900"}`}>
-                <div className="flex justify-between items-center mb-6">
-                  <div>
-                    <h2 className="font-bold text-base tracking-tight">
-                      Ticket Conversation
-                    </h2>
-                    <p className="text-xs text-slate-500 mt-0.5">
-                      Discussion logs on ticket <span className="font-semibold text-slate-700">#{selectedCommentTicket.id}</span> from {selectedCommentTicket.sender}
-                    </p>
-                  </div>
-                  <button
-                    onClick={() => {
-                      setSelectedCommentTicket(null);
-                      setAiReply("");
-                    }}
-                    className="text-xs text-slate-400 hover:text-slate-655 transition underline cursor-pointer font-bold"
-                  >
-                    Close Conversation
-                  </button>
-                </div>
-
-                <div className="space-y-3.5 mb-6 max-h-60 overflow-y-auto pr-1">
-                  {(!Array.isArray(comments) || comments.length === 0) ? (
-                    <p className="text-xs text-slate-400 italic py-4">No conversation logs found for this ticket yet.</p>
-                  ) : (
-                    comments.map((comment) => (
-                      <div
-                        key={comment.id}
-                        className={`border-b pb-3 last:border-0 ${darkMode ? "border-slate-850" : "border-slate-100"}`}
-                      >
-                        <div className="flex justify-between items-center mb-1">
-                          <strong className="text-xs font-bold text-slate-400 dark:text-slate-250">
-                            {comment.sender}
-                          </strong>
-                          <span className="text-[10px] text-slate-400">
-                            {comment.created_at ? new Date(comment.created_at).toLocaleTimeString() : ""}
-                          </span>
-                        </div>
-                        <p className="text-xs text-slate-600 dark:text-slate-400 leading-relaxed">
-                          {comment.message}
-                        </p>
-                      </div>
-                    ))
-                  )}
-                </div>
-
-                <div className="border-t pt-4 border-slate-150 dark:border-slate-805">
-                  <button
-                    onClick={() => generateAiReply(selectedCommentTicket.id)}
-                    className="bg-purple-600 hover:bg-purple-700 text-white px-4 py-2 rounded-xl text-xs font-bold shadow-md transition transform active:scale-95 cursor-pointer mb-3"
-                  >
-                    Generate AI Reply
-                  </button>
-
-                  {aiReply && (
-                    <div className={`border rounded-xl p-4 mb-4 ${
-                      darkMode ? "bg-slate-950/80 border-slate-800 text-slate-100" : "bg-indigo-50/50 border-indigo-100 text-slate-900"
-                    }`}>
-                      <h4 className="font-bold text-sm mb-2 text-indigo-550 dark:text-indigo-400">
-                        AI Suggested Reply
-                      </h4>
-                      <p className="whitespace-pre-wrap text-xs leading-relaxed text-slate-700 dark:text-slate-350">
-                        {aiReply}
+            {/* Conversation Logs Box */}
+            <AnimatePresence>
+              {selectedCommentTicket && (
+                <motion.div
+                  initial={{ opacity: 0, y: 15 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: 15 }}
+                  className="bg-brand-surface border border-brand-border/60 rounded-xl p-5 shadow-xl mt-6 relative overflow-hidden"
+                >
+                  <div className="flex justify-between items-start mb-5 pb-4 border-b border-brand-border/40">
+                    <div>
+                      <h2 className="text-sm font-semibold tracking-tight text-brand-text-primary flex items-center gap-1.5">
+                        <MessageSquare className="w-4 h-4 text-brand-primary" />
+                        Discuss Ticket #{selectedCommentTicket.id}
+                      </h2>
+                      <p className="text-[11px] text-brand-text-secondary mt-0.5">
+                        Thread logs from customer <span className="font-semibold text-brand-text-primary">{selectedCommentTicket.sender}</span>
                       </p>
-                      <button
-                        onClick={() => setNewComment(aiReply)}
-                        className="bg-green-600 hover:bg-green-700 text-white px-3 py-1.5 rounded-lg text-xs font-bold shadow-md transition transform active:scale-95 cursor-pointer mt-3 block"
-                      >
-                        Use Suggestion
-                      </button>
                     </div>
-                  )}
+                    <button
+                      onClick={() => {
+                        setSelectedCommentTicket(null);
+                        setAiReply("");
+                      }}
+                      className="text-xs text-brand-text-secondary hover:text-brand-text-primary transition underline cursor-pointer font-semibold"
+                    >
+                      Close Discussion
+                    </button>
+                  </div>
 
-                  <textarea
-                    value={newComment}
-                    onChange={(e) => setNewComment(e.target.value)}
-                    placeholder="Reply to ticket thread..."
-                    className={`w-full px-4 py-3 border rounded-xl text-xs focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition duration-150 resize-none ${darkMode ? "bg-slate-950 border-slate-800 text-white placeholder-slate-700" : "bg-white border-slate-200 text-black placeholder-slate-400"
-                      }`}
-                    rows={3}
-                  />
-                  <button
-                    onClick={sendAdminComment}
-                    className="px-4 py-2 bg-indigo-650 hover:bg-indigo-750 text-white font-bold text-xs rounded-xl shadow-md transition mt-2 cursor-pointer active:scale-95"
-                  >
-                    Send Reply
-                  </button>
-                </div>
-              </div>
-            )}
+                  <div className="space-y-3.5 mb-5 max-h-60 overflow-y-auto pr-1">
+                    {(!Array.isArray(comments) || comments.length === 0) ? (
+                      <div className="text-center py-6 text-brand-text-secondary/50 italic text-xs">
+                        No messages have been posted on this support log yet.
+                      </div>
+                    ) : (
+                      comments.map((comment) => (
+                        <div key={comment.id} className="border-b border-brand-border/30 pb-3 last:border-0">
+                          <div className="flex justify-between items-center mb-1">
+                            <span className="text-[10px] font-bold text-brand-text-secondary">
+                              {comment.sender}
+                            </span>
+                            <span className="text-[9px] text-brand-text-secondary/40">
+                              {comment.created_at ? new Date(comment.created_at).toLocaleTimeString() : ""}
+                            </span>
+                          </div>
+                          <p className="text-xs leading-normal text-brand-text-primary">
+                            {comment.message}
+                          </p>
+                        </div>
+                      ))
+                    )}
+                  </div>
+
+                  <div className="border-t border-brand-border/40 pt-4 space-y-4">
+                    <div className="flex gap-2">
+                      <motion.button
+                        whileTap={{ scale: 0.98 }}
+                        onClick={() => generateAiReply(selectedCommentTicket.id)}
+                        className="bg-brand-primary/10 hover:bg-brand-primary/20 text-brand-primary border border-brand-primary/20 px-3.5 py-1.5 rounded-lg text-xs font-semibold shadow-xs transition cursor-pointer flex items-center gap-1.5"
+                      >
+                        <BrainCircuit className="w-3.5 h-3.5" />
+                        Generate AI Response
+                      </motion.button>
+                    </div>
+
+                    <AnimatePresence>
+                      {aiReply && (
+                        <motion.div
+                          initial={{ opacity: 0, y: 5 }}
+                          animate={{ opacity: 1, y: 0 }}
+                          exit={{ opacity: 0, y: 5 }}
+                          className="border border-brand-primary/20 bg-brand-primary/5 rounded-lg p-3 text-xs"
+                        >
+                          <h4 className="font-semibold text-brand-primary mb-1 flex items-center gap-1.5">
+                            <Sparkles className="w-3 h-3 animate-pulse" />
+                            AI Suggested Reply
+                          </h4>
+                          <p className="whitespace-pre-wrap text-[11px] text-brand-text-secondary leading-normal mb-3">
+                            {aiReply}
+                          </p>
+                          <motion.button
+                            whileTap={{ scale: 0.98 }}
+                            onClick={() => setNewComment(aiReply)}
+                            className="bg-brand-success hover:bg-brand-success/90 text-white px-2.5 py-1 rounded text-[10px] font-bold shadow-sm transition cursor-pointer inline-flex items-center gap-1"
+                          >
+                            <CheckCircle className="w-3 h-3" />
+                            Apply Suggestion
+                          </motion.button>
+                        </motion.div>
+                      )}
+                    </AnimatePresence>
+
+                    <div className="flex gap-2">
+                      <textarea
+                        value={newComment}
+                        onChange={(e) => setNewComment(e.target.value)}
+                        placeholder="Reply response details..."
+                        rows={2}
+                        className="flex-1 px-3 py-2 bg-brand-bg border border-brand-border/60 hover:border-brand-border rounded-lg text-brand-text-primary text-xs focus:outline-none focus:ring-1 focus:ring-brand-primary focus:border-brand-primary transition duration-150 resize-none placeholder:text-brand-text-secondary/35"
+                      />
+                      <motion.button
+                        whileTap={{ scale: 0.98 }}
+                        onClick={sendAdminComment}
+                        className="px-4 py-2 bg-brand-primary hover:bg-brand-primary/90 text-white font-semibold text-xs rounded-lg transition shadow-md cursor-pointer flex items-center justify-center shrink-0 self-end h-[38px]"
+                      >
+                        <Send className="w-3.5 h-3.5" />
+                      </motion.button>
+                    </div>
+                  </div>
+                </motion.div>
+              )}
+            </AnimatePresence>
           </div>
         )}
       </div>
 
-      {/* Human Intervention Dialog Deck */}
-      {selectedTicket && (
-        <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4">
-          <div className={`max-w-lg w-full rounded-2xl shadow-2xl border p-6 overflow-hidden animate-in zoom-in-95 duration-150 ${darkMode ? "bg-slate-900 border-slate-800 text-white" : "bg-white border-slate-200 text-slate-900"
-            }`}>
-            <h2 className="text-xl font-bold tracking-tight mb-1">Human Intervention Deck</h2>
-            <p className="text-xs text-slate-400 border-b border-slate-750 pb-3 mb-4">
-              Correction controls for ticket <span className="font-mono text-indigo-400 font-semibold">#{selectedTicket.id}</span>
-            </p>
+      {/* Human Intervention Overrides Modal Dialog */}
+      <AnimatePresence>
+        {selectedTicket && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4"
+          >
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95, y: 15 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.95, y: 15 }}
+              className="max-w-lg w-full bg-brand-surface border border-brand-border/60 rounded-xl shadow-2xl p-6 relative overflow-hidden"
+            >
+              <h2 className="text-sm font-semibold tracking-tight text-brand-text-primary mb-1 flex items-center gap-1.5">
+                <ShieldAlert className="w-4 h-4 text-brand-warning" />
+                Human Override Console
+              </h2>
+              <p className="text-[11px] text-brand-text-secondary mb-4 pb-3 border-b border-brand-border/40">
+                Administrative control over ticket <span className="font-mono text-brand-primary font-bold">#{selectedTicket.id}</span>
+              </p>
 
-            <div className="space-y-3.5 mb-6">
-              <div>
-                <label className="text-[10px] uppercase font-extrabold tracking-wider text-slate-400 block mb-1">Subject</label>
-                <div className={`text-xs p-3 rounded-xl font-medium border ${darkMode ? "bg-slate-950 border-slate-900 text-slate-300" : "bg-slate-50 border-slate-100 text-slate-750"}`}>{selectedTicket.subject}</div>
-              </div>
-              <div>
-                <label className="text-[10px] uppercase font-extrabold tracking-wider text-slate-400 block mb-1">AI Action Summary</label>
-                <div className={`text-xs font-mono p-3 rounded-xl border ${darkMode ? "bg-slate-950/60 border-slate-900/50 text-slate-400" : "bg-slate-50/60 border-slate-100/50 text-slate-600"}`}>{selectedTicket.action_taken || "Awaiting triage action"}</div>
-              </div>
-              <div>
-                <label className="text-[10px] uppercase font-extrabold tracking-wider text-slate-400 block mb-1">Current Resolution</label>
-                <div className={`text-xs p-3 rounded-xl border ${darkMode ? "bg-emerald-500/10 border-emerald-500/20 text-emerald-400" : "bg-emerald-50/80 border-emerald-100 text-emerald-700"}`}>
-                  {selectedTicket.resolution_note || "No resolution note recorded yet."}
+              <div className="space-y-4 mb-6 text-xs">
+                <div>
+                  <label className="text-[9px] uppercase font-bold tracking-wider text-brand-text-secondary block mb-1">Subject</label>
+                  <div className="p-2.5 bg-brand-bg/50 border border-brand-border/40 rounded-lg text-brand-text-primary font-medium">
+                    {selectedTicket.subject}
+                  </div>
+                </div>
+                <div>
+                  <label className="text-[9px] uppercase font-bold tracking-wider text-brand-text-secondary block mb-1">AI Action Taken</label>
+                  <div className="p-2.5 bg-brand-bg/50 border border-brand-border/40 rounded-lg text-brand-text-secondary font-mono">
+                    {selectedTicket.action_taken || "Awaiting triage action"}
+                  </div>
+                </div>
+                <div>
+                  <label className="text-[9px] uppercase font-bold tracking-wider text-brand-text-secondary block mb-1">Current Resolution</label>
+                  <div className="p-2.5 bg-brand-success/5 border border-brand-success/10 rounded-lg text-brand-success font-medium">
+                    {selectedTicket.resolution_note || "No resolution note recorded yet."}
+                  </div>
                 </div>
               </div>
-            </div>
 
-            <form onSubmit={handleApplyOverride}>
-              <div className="mb-4">
-                <label className="text-[10px] uppercase font-extrabold tracking-wider text-slate-400 block mb-1.5">Executive Action Correction</label>
-                <textarea
-                  required
-                  rows={2}
-                  value={overrideText}
-                  onChange={(e) => setOverrideText(e.target.value)}
-                  placeholder="e.g. Force approved refund, bypassed standard threshold policy."
-                  className={`w-full px-3 py-2 rounded-xl text-xs focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition border ${darkMode ? "bg-slate-950 border-slate-800 text-white placeholder-slate-700" : "bg-white border-slate-200 text-black placeholder-slate-400"
-                    }`}
-                />
-              </div>
-              <div className="mb-6">
-                <label className="text-[10px] uppercase font-extrabold tracking-wider text-slate-400 block mb-1.5">Customer-Facing Resolution Note</label>
-                <textarea
-                  rows={2}
-                  value={resolutionNote}
-                  onChange={(e) => setResolutionNote(e.target.value)}
-                  placeholder="Write customer update here..."
-                  className={`w-full px-3 py-2 rounded-xl text-xs focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition border ${darkMode ? "bg-slate-950 border-slate-800 text-white placeholder-slate-700" : "bg-white border-slate-200 text-black placeholder-slate-400"
-                    }`}
-                />
-              </div>
+              <form onSubmit={handleApplyOverride} className="space-y-4">
+                <div>
+                  <label className="text-[9px] uppercase font-bold tracking-wider text-brand-text-secondary block mb-1.5">Override Action Log Description</label>
+                  <textarea
+                    required
+                    rows={2}
+                    value={overrideText}
+                    onChange={(e) => setOverrideText(e.target.value)}
+                    placeholder="e.g. Bypass standard triage: apply manual override to refund workflow."
+                    className="w-full px-3 py-2 bg-brand-bg border border-brand-border/60 hover:border-brand-border rounded-lg text-brand-text-primary text-xs focus:outline-none focus:ring-1 focus:ring-brand-primary focus:border-brand-primary transition resize-none placeholder:text-brand-text-secondary/35"
+                  />
+                </div>
+                <div>
+                  <label className="text-[9px] uppercase font-bold tracking-wider text-brand-text-secondary block mb-1.5">Customer-Facing Resolution Note</label>
+                  <textarea
+                    rows={2}
+                    value={resolutionNote}
+                    onChange={(e) => setResolutionNote(e.target.value)}
+                    placeholder="Write status update message details..."
+                    className="w-full px-3 py-2 bg-brand-bg border border-brand-border/60 hover:border-brand-border rounded-lg text-brand-text-primary text-xs focus:outline-none focus:ring-1 focus:ring-brand-primary focus:border-brand-primary transition resize-none placeholder:text-brand-text-secondary/35"
+                  />
+                </div>
 
-              <div className="flex items-center justify-between gap-3 border-t border-slate-750 pt-4">
-                <button
-                  type="button"
-                  onClick={() => setSelectedTicket(null)}
-                  className={`px-4 py-2 rounded-xl font-bold text-xs transition border ${darkMode ? "bg-slate-950 border-slate-850 hover:bg-slate-900 text-slate-400" : "bg-slate-100 hover:bg-slate-200 text-slate-700 border-transparent"
-                    }`}
-                >
-                  Cancel
-                </button>
-                <div className="flex gap-2">
+                <div className="flex items-center justify-between gap-3 border-t border-brand-border/40 pt-4">
                   <button
                     type="button"
-                    onClick={() => updateResolutionNote(selectedTicket.id, resolutionNote)}
-                    className="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs rounded-xl transition shadow-sm"
+                    onClick={() => setSelectedTicket(null)}
+                    className="px-4 py-2 bg-brand-elevated/40 hover:bg-brand-elevated border border-brand-border/60 text-brand-text-secondary hover:text-brand-text-primary rounded-lg text-xs font-semibold transition cursor-pointer"
                   >
-                    Save Resolution
+                    Cancel
                   </button>
-                  <button
-                    type="submit"
-                    disabled={isSubmitting}
-                    className="px-4 py-2 bg-indigo-650 hover:bg-indigo-700 disabled:opacity-50 text-white font-bold text-xs rounded-xl shadow-md transition"
-                  >
-                    {isSubmitting ? "Applying..." : "Apply Override"}
-                  </button>
+                  <div className="flex gap-2">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        updateResolutionNote(selectedTicket.id, resolutionNote);
+                        setSelectedTicket(null);
+                      }}
+                      className="px-4 py-2 bg-brand-success hover:bg-brand-success/90 text-white font-semibold text-xs rounded-lg transition shadow-md cursor-pointer"
+                    >
+                      Save Resolution
+                    </button>
+                    <motion.button
+                      whileTap={{ scale: 0.98 }}
+                      type="submit"
+                      disabled={isSubmitting}
+                      className="px-4 py-2 bg-brand-primary hover:bg-brand-primary/90 disabled:opacity-50 text-white font-semibold text-xs rounded-lg shadow-md hover:shadow-lg transition duration-150 cursor-pointer"
+                    >
+                      {isSubmitting ? "Applying..." : "Apply Override"}
+                    </motion.button>
+                  </div>
                 </div>
-              </div>
-            </form>
-          </div>
-        </div>
-      )}
+              </form>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       {/* Paywall Upgrade Modal Dialog */}
-      {showPaywall && (
-        <div className="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-sm flex items-center justify-center p-4 text-white">
-          <div className="max-w-2xl w-full bg-slate-900 border border-slate-800 rounded-3xl shadow-2xl p-8 relative overflow-hidden">
-            <div className="text-center mb-8">
-              <span className="px-3 py-1 bg-indigo-500/10 text-indigo-400 border border-indigo-500/20 rounded-full text-xs font-bold tracking-widest uppercase">
-                Quota Threshold Exceeded
-              </span>
-              <h2 className="text-2xl font-extrabold text-white mt-4">Elevate Ticket Processing Quota</h2>
-              <p className="text-sm text-slate-400 mt-2 max-w-md mx-auto">
-                Your workspace has exhausted the default free autonomous triage allocations.
-              </p>
-            </div>
+      <AnimatePresence>
+        {showPaywall && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4"
+          >
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95, y: 15 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.95, y: 15 }}
+              className="max-w-2xl w-full bg-brand-surface border border-brand-border/60 rounded-2xl shadow-2xl p-8 relative overflow-hidden"
+            >
+              {/* Vercel-like top gradient accent */}
+              <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-indigo-500 via-brand-primary to-purple-600"></div>
 
-            {/* Pricing Cards Dock */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-5 items-stretch">
-              {/* Current Free Setup */}
-              <div className="bg-slate-950/50 border border-slate-850 rounded-2xl p-6 flex flex-col justify-between opacity-60">
-                <div>
-                  <h3 className="text-base font-bold text-slate-400">Starter Core Tier</h3>
-                  <div className="mt-3 flex items-baseline gap-1 text-slate-300">
-                    <span className="text-3xl font-black">₹0</span>
-                    <span className="text-xs text-slate-500">/ forever</span>
-                  </div>
-                  <ul className="mt-6 space-y-2.5 text-xs text-slate-400">
-                    <li>❌ Max 10 autonomous triages / month</li>
-                    <li>✓ Basic sentiment classification</li>
-                    <li>❌ Manual intervention log pipeline</li>
-                  </ul>
-                </div>
-                <button disabled className="w-full py-2.5 mt-8 bg-slate-900 text-slate-700 font-bold text-xs rounded-xl cursor-not-allowed">
-                  Current Tier Exhausted
-                </button>
+              <div className="text-center mb-8">
+                <span className="inline-flex items-center gap-1.5 px-2.5 py-1 bg-brand-primary/10 text-brand-primary border border-brand-primary/20 rounded-full text-[10px] font-bold uppercase tracking-wider">
+                  <Sparkles className="w-3 h-3" />
+                  Tier Limit Exceeded
+                </span>
+                <h2 className="text-xl font-bold text-brand-text-primary mt-4 tracking-tight">
+                  Upgrade Support Operations Plan
+                </h2>
+                <p className="text-xs text-brand-text-secondary mt-2 max-w-sm mx-auto leading-normal">
+                  Your workspace has exhausted the default free tier classification allocations. Unlock priority queues.
+                </p>
               </div>
 
-              {/* Pro Upgrade Target */}
-              <div className="bg-gradient-to-b from-slate-850 to-slate-900 border-2 border-indigo-500 rounded-2xl p-6 flex flex-col justify-between shadow-xl relative">
-                <div className="absolute -top-3 right-4 px-2 py-0.5 bg-indigo-500 text-white text-[9px] font-bold tracking-wider rounded-full uppercase">
-                  Recommended
-                </div>
-                <div>
-                  <h3 className="text-base font-bold text-white">Growth Operations Tier</h3>
-                  <div className="mt-3 flex items-baseline gap-1 text-white">
-                    <span className="text-3xl font-black">₹4,999</span>
-                    <span className="text-xs text-slate-400">/ month</span>
+              {/* Pricing Grid */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-5 items-stretch">
+
+                {/* Starter Plan */}
+                <div className="bg-brand-bg/40 border border-brand-border/40 rounded-xl p-5 flex flex-col justify-between opacity-50 relative">
+                  <div>
+                    <h3 className="text-xs font-bold text-brand-text-secondary uppercase tracking-wider">Starter Tier</h3>
+                    <div className="mt-3 flex items-baseline gap-1 text-brand-text-primary">
+                      <span className="text-2xl font-black">₹0</span>
+                      <span className="text-[10px] text-brand-text-secondary">/ forever</span>
+                    </div>
+                    <ul className="mt-5 space-y-2 text-xs text-brand-text-secondary leading-normal">
+                      <li className="flex items-center gap-2 text-brand-text-secondary/80">✕ Max 10 auto triages / mo</li>
+                      <li className="flex items-center gap-2">✓ Basic sentiment classification</li>
+                      <li className="flex items-center gap-2 text-brand-text-secondary/80">✕ Intervention logs panel</li>
+                    </ul>
                   </div>
-                  <ul className="mt-6 space-y-2.5 text-xs text-slate-350">
-                    <li>✓ <strong className="text-indigo-400">Unlimited</strong> AI Auto-Triages</li>
-                    <li>✓ Priority Background Processing Queue</li>
-                    <li>✓ Complete Human Intervention Panel</li>
-                  </ul>
+                  <button disabled className="w-full py-2 mt-6 bg-brand-elevated/40 text-brand-text-secondary/60 text-xs font-semibold rounded-lg cursor-not-allowed border border-brand-border/20">
+                    Active Limit Exhausted
+                  </button>
                 </div>
+
+                {/* Pro Plan */}
+                <div className="bg-brand-bg border-2 border-brand-primary rounded-xl p-5 flex flex-col justify-between shadow-xl relative">
+                  <div className="absolute top-3 right-3 px-2 py-0.5 bg-brand-primary text-white text-[9px] font-bold tracking-wide rounded-md uppercase">
+                    Growth
+                  </div>
+                  <div>
+                    <h3 className="text-xs font-bold text-brand-primary uppercase tracking-wider">Operations Tier</h3>
+                    <div className="mt-3 flex items-baseline gap-1 text-brand-text-primary">
+                      <span className="text-3xl font-black">₹4,999</span>
+                      <span className="text-[10px] text-brand-text-secondary">/ month</span>
+                    </div>
+                    <ul className="mt-5 space-y-2 text-xs text-brand-text-secondary leading-normal">
+                      <li className="flex items-center gap-2 text-brand-text-primary">✓ <strong className="text-brand-primary">Unlimited</strong> Auto-Triaging</li>
+                      <li className="flex items-center gap-2">✓ Priority classification queues</li>
+                      <li className="flex items-center gap-2">✓ Human-in-the-loop overrides</li>
+                    </ul>
+                  </div>
+                  <motion.button
+                    whileTap={{ scale: 0.98 }}
+                    onClick={() => handleTriggerCheckout("Growth Operations Tier", "₹4,999/mo")}
+                    disabled={checkoutLoading}
+                    className="w-full py-2 mt-6 bg-brand-primary hover:bg-brand-primary/90 disabled:opacity-50 text-white font-semibold text-xs rounded-lg transition duration-150 shadow-md hover:shadow-lg flex items-center justify-center gap-1.5 cursor-pointer"
+                  >
+                    {checkoutLoading ? (
+                      <>
+                        <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                        Upgrading...
+                      </>
+                    ) : (
+                      <>
+                        Upgrade Workspace
+                        <ArrowRight className="w-3.5 h-3.5" />
+                      </>
+                    )}
+                  </motion.button>
+                </div>
+
+              </div>
+
+              {/* Close Button */}
+              <div className="text-center mt-6">
                 <button
-                  onClick={() => handleTriggerCheckout("Growth Operations Tier", "₹4,999/mo")}
-                  disabled={checkoutLoading}
-                  className="w-full py-2.5 mt-8 bg-indigo-650 hover:bg-indigo-700 disabled:opacity-50 text-white font-bold text-xs rounded-xl shadow-lg transition duration-150 transform active:scale-95 animate-pulse"
+                  onClick={() => setShowPaywall(false)}
+                  className="text-xs font-semibold text-brand-text-secondary hover:text-brand-text-primary transition underline cursor-pointer"
                 >
-                  {checkoutLoading ? "Connecting Secure Server..." : "Unlock Unlimited Operations"}
+                  Back to Dashboard (Read-Only)
                 </button>
               </div>
-            </div>
-
-            {/* Close */}
-            <div className="text-center mt-6">
-              <button
-                onClick={() => setShowPaywall(false)}
-                className="text-xs font-semibold text-slate-500 hover:text-slate-350 transition underline"
-              >
-                Back to Dashboard (Read-Only)
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }
