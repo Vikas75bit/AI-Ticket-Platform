@@ -296,6 +296,19 @@ function App() {
     fetchTickets();
   };
 
+  const deleteTicket = async (ticketId) => {
+    if (!window.confirm("Permanently delete this ticket? This cannot be undone.")) return;
+    try {
+      const res = await fetch(`${API_BASE_URL}/tickets/${ticketId}`, { method: "DELETE" });
+      if (!res.ok) throw new Error("Delete failed");
+      showNotification("Ticket deleted.", "success");
+      fetchTickets();
+      fetchAnalytics();
+    } catch (err) {
+      showNotification(`Delete failed: ${err.message}`, "error");
+    }
+  };
+
   const openOverrideModal = (ticket) => {
     setSelectedTicket(ticket);
     setOverrideText("");
@@ -313,11 +326,16 @@ function App() {
     return matchesSearch && matchesUrgency;
   });
 
-  const displayedTickets = filteredTickets.filter((ticket) => {
+  const queueFiltered = filteredTickets.filter((ticket) => {
     if (ticketFilter === "mine") return ticket.assigned_to === "admin@gmail.com";
     if (ticketFilter === "unassigned") return !ticket.assigned_to;
     return true;
   });
+
+  const RESOLVED_STATUSES = ["Resolved", "Closed"];
+  const activeTickets   = queueFiltered.filter((t) => !RESOLVED_STATUSES.includes(t.status));
+  const resolvedTickets = queueFiltered.filter((t) =>  RESOLVED_STATUSES.includes(t.status));
+  const displayedTickets = queueFiltered; // kept for backward compat
 
   const assignedTickets = tickets.filter((ticket) => ticket.assigned_to).length;
   const unassignedTickets = tickets.filter((ticket) => !ticket.assigned_to).length;
@@ -590,14 +608,21 @@ function App() {
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-brand-border">
-                    {displayedTickets.length === 0 ? (
+                    {/* ── Active tickets ── */}
+                    {activeTickets.length === 0 && resolvedTickets.length === 0 ? (
                       <tr>
                         <td colSpan="5" className="px-4 py-12 text-center text-brand-text-secondary">
-                          No active tickets match criteria.
+                          No tickets match your current filters.
+                        </td>
+                      </tr>
+                    ) : activeTickets.length === 0 ? (
+                      <tr>
+                        <td colSpan="5" className="px-4 py-8 text-center text-brand-text-secondary text-xs">
+                          All tickets resolved — queue clear.
                         </td>
                       </tr>
                     ) : (
-                      displayedTickets.map((ticket) => (
+                      activeTickets.map((ticket) => (
                         <tr key={ticket.id} className="hover:bg-brand-bg/50 transition-colors group">
                           <td className="px-4 py-3">
                             <div className="font-medium text-brand-text-primary max-w-[200px] truncate mb-0.5 flex items-center gap-2">
@@ -658,10 +683,69 @@ function App() {
                                 >
                                   Discuss
                                 </button>
+                                <button
+                                  onClick={() => deleteTicket(ticket.id)}
+                                  className="px-2 py-1 bg-brand-danger/10 text-brand-danger hover:bg-brand-danger hover:text-white text-[10px] font-medium rounded transition-colors"
+                                  title="Delete ticket"
+                                >
+                                  <Trash2 className="w-3 h-3" />
+                                </button>
                              </div>
                           </td>
                         </tr>
                       ))
+                    )}
+
+                    {/* ── Resolved / Closed section ── */}
+                    {resolvedTickets.length > 0 && (
+                      <>
+                        <tr>
+                          <td colSpan="5" className="px-4 py-2 bg-brand-bg/60 border-t-2 border-brand-border/60">
+                            <div className="flex items-center gap-2 text-[10px] font-semibold uppercase tracking-widest text-brand-text-muted">
+                              <CheckCircle className="w-3 h-3 text-brand-success" />
+                              Resolved &amp; Closed ({resolvedTickets.length})
+                            </div>
+                          </td>
+                        </tr>
+                        {resolvedTickets.map((ticket) => (
+                          <tr key={ticket.id} className="opacity-50 hover:opacity-80 transition-opacity group">
+                            <td className="px-4 py-2.5">
+                              <div className="font-medium text-brand-text-secondary max-w-[200px] truncate mb-0.5 text-xs line-through">
+                                {ticket.subject}
+                              </div>
+                              <div className="text-[10px] text-brand-text-muted truncate max-w-[200px]">{ticket.sender}</div>
+                            </td>
+                            <td className="px-4 py-2.5">
+                              <span className={`px-1.5 py-0.5 rounded text-[9px] font-medium ${getStatusBadgeStyles(ticket.status)}`}>
+                                {ticket.status}
+                              </span>
+                            </td>
+                            <td className="px-4 py-2.5">
+                              <div className="text-[10px] text-brand-text-muted">{ticket.department}</div>
+                            </td>
+                            <td className="px-4 py-2.5">
+                              <div className="text-[10px] text-brand-text-muted">{ticket.assigned_to || "—"}</div>
+                            </td>
+                            <td className="px-4 py-2.5 text-right">
+                              <div className="flex items-center justify-end gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                                <button
+                                  onClick={() => { setSelectedCommentTicket(ticket); loadComments(ticket.id); setAiReply(""); }}
+                                  className="px-2 py-1 bg-brand-primary/10 text-brand-primary hover:bg-brand-primary hover:text-white text-[10px] font-medium rounded transition-colors"
+                                >
+                                  View
+                                </button>
+                                <button
+                                  onClick={() => deleteTicket(ticket.id)}
+                                  className="px-2 py-1 bg-brand-danger/10 text-brand-danger hover:bg-brand-danger hover:text-white text-[10px] font-medium rounded transition-colors"
+                                  title="Delete ticket"
+                                >
+                                  <Trash2 className="w-3 h-3" />
+                                </button>
+                              </div>
+                            </td>
+                          </tr>
+                        ))}
+                      </>
                     )}
                   </tbody>
                 </table>

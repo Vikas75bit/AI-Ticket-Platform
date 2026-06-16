@@ -16,6 +16,7 @@ import {
   ArrowRight,
   Loader2,
   ChevronRight,
+  Trash2,
   X
 } from "lucide-react";
 
@@ -131,6 +132,20 @@ function UserDashboard() {
   }, [loadTickets]);
 
   const handleLogout = async () => await supabase.auth.signOut();
+
+  const deleteTicket = async (ticketId, e) => {
+    e.stopPropagation();
+    if (!window.confirm("Delete this ticket? This cannot be undone.")) return;
+    try {
+      const res = await fetch(`${API_BASE_URL}/tickets/${ticketId}`, { method: "DELETE" });
+      if (!res.ok) throw new Error("Delete failed");
+      showNotification("Ticket deleted.", "success");
+      if (selectedTicket?.id === ticketId) setSelectedTicket(null);
+      await loadTickets();
+    } catch (err) {
+      showNotification(`Delete failed: ${err.message}`, "error");
+    }
+  };
 
   const createTicket = async (e) => {
     e.preventDefault();
@@ -356,35 +371,48 @@ function UserDashboard() {
                   tickets.map((ticket) => {
                     const isSelected = selectedTicket?.id === ticket.id;
                     return (
-                      <button
+                      <div
                         key={ticket.id}
-                        onClick={() => { setSelectedTicket(ticket); loadComments(ticket.id); }}
-                        className={`w-full text-left p-3 rounded-lg border transition-all duration-200 cursor-pointer ${
+                        className={`w-full text-left p-3 rounded-lg border transition-all duration-200 relative group ${
                           isSelected
                             ? "bg-brand-surface border-brand-border ring-1 ring-brand-primary shadow-sm"
                             : "bg-brand-bg border-transparent hover:bg-brand-surface hover:border-brand-border/60"
                         }`}
                       >
-                        <div className="flex items-start justify-between gap-3 mb-1.5">
-                          <h3 className="font-medium text-sm text-brand-text-primary line-clamp-1 flex-1 flex items-center gap-2">
-                            {ticket.subject}
-                            {getUnreadCount(ticket) > 0 && (
-                              <span className="w-2 h-2 rounded-full bg-brand-primary shrink-0" />
-                            )}
-                          </h3>
-                        </div>
-                        <p className="text-xs text-brand-text-secondary line-clamp-2 mb-2.5 leading-relaxed">
-                          {ticket.summary || ticket.description}
-                        </p>
-                        <div className="flex items-center justify-between">
-                          <span className={`px-2 py-0.5 rounded-md text-[10px] font-medium ${getStatusBadgeStyles(ticket.status)}`}>
-                            {ticket.status || "Open"}
-                          </span>
-                          <span className="text-[10px] text-brand-text-secondary font-medium">
-                            #{ticket.id.toString().substring(0, 6)}
-                          </span>
-                        </div>
-                      </button>
+                        <button
+                          onClick={() => { setSelectedTicket(ticket); loadComments(ticket.id); }}
+                          className="w-full text-left"
+                        >
+                          <div className="flex items-start justify-between gap-3 mb-1.5">
+                            <h3 className="font-medium text-sm text-brand-text-primary line-clamp-1 flex-1 flex items-center gap-2">
+                              {ticket.subject}
+                              {getUnreadCount(ticket) > 0 && (
+                                <span className="w-2 h-2 rounded-full bg-brand-primary shrink-0" />
+                              )}
+                            </h3>
+                          </div>
+                          <p className="text-xs text-brand-text-secondary line-clamp-2 mb-2.5 leading-relaxed">
+                            {ticket.summary || ticket.description}
+                          </p>
+                          <div className="flex items-center justify-between">
+                            <span className={`px-2 py-0.5 rounded-md text-[10px] font-medium ${getStatusBadgeStyles(ticket.status)}`}>
+                              {ticket.status || "Open"}
+                            </span>
+                            <span className="text-[10px] text-brand-text-secondary font-medium">
+                              #{ticket.id.toString().substring(0, 6)}
+                            </span>
+                          </div>
+                        </button>
+
+                        {/* Delete button — appears on hover */}
+                        <button
+                          onClick={(e) => deleteTicket(ticket.id, e)}
+                          title="Delete ticket"
+                          className="absolute top-2.5 right-2.5 p-1 rounded opacity-0 group-hover:opacity-100 text-brand-text-muted hover:text-brand-danger hover:bg-brand-danger/10 transition-all"
+                        >
+                          <Trash2 className="w-3.5 h-3.5" />
+                        </button>
+                      </div>
                     )
                   })
                 )}
