@@ -10,12 +10,7 @@ The platform enables customers to create support tickets, allows administrators 
 
 ## Live Demo
 
-Frontend:
-https://YOUR-VERCEL-URL
-
-Backend:
-https://YOUR-RAILWAY-URL
-
+Website URL:https://ai-ticket-platform.vercel.app/
 ---
 
 ## Features
@@ -42,13 +37,7 @@ https://YOUR-RAILWAY-URL
 - Automated Ticket Analysis
 - Retrieval-Augmented Generation (RAG)
 
----
 
-## Architecture
-
-[Insert architecture diagram here]
-
----
 
 ## Tech Stack
 
@@ -84,29 +73,8 @@ https://YOUR-RAILWAY-URL
 
 ---
 
-## Screenshots
+## Screenshots(in docs folder)
 
-### Login
-
-[Insert Screenshot]
-
-### User Dashboard
-
-[Insert Screenshot]
-
-### Admin Dashboard
-
-[Insert Screenshot]
-
-### Analytics
-
-[Insert Screenshot]
-
-### Knowledge Base
-
-[Insert Screenshot]
-
----
 
 ## Future Improvements
 
