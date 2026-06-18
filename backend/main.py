@@ -27,6 +27,7 @@ from sqlalchemy.orm import Session
 from database import SessionLocal, engine
 import models
 from fastapi.middleware.cors import CORSMiddleware
+from config import settings
 
 # Auto-create tables in database on startup
 models.Base.metadata.create_all(bind=engine)
@@ -36,22 +37,22 @@ BASE_DIR = Path(__file__).resolve().parent
 # Load local .env configurations from this app folder, regardless of where uvicorn is run.
 load_dotenv(BASE_DIR / ".env")
 
-app = FastAPI()
+app = FastAPI(
+    title="Enterprise AI Ticket Automation Platform",
+    version="1.0.0",
+    # Hide interactive docs if running explicitly in an active production cloud setting
+    docs_url="/docs" if settings.ENV == "development" else None,
+    redoc_url=None
+)
+
+# ─── HARDENED SECURITY SHIELD CONFIGURATION ──────────────────────────────────
+# Restricts inbound API cross-origin fetch requests strictly to authorized frontend domains
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=[
-        "http://localhost:3000",
-        "http://localhost:5173",
-
-        # Production frontend
-        "https://ai-ticket-platform.vercel.app",
-
-        # Old deployment URL (keep for safety)
-        "https://ai-ticket-system-frontend-backend.vercel.app"
-    ],
+    allow_origins=settings.ALLOWED_ORIGINS,
     allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
+    allow_methods=["GET", "POST", "PUT", "DELETE"], # Lock down to explicit required HTTP verbs
+    allow_headers=["Content-Type", "Authorization"],
 )
 # Database Session Dependency
 def get_db():
