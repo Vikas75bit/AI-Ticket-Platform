@@ -31,6 +31,7 @@ from database import SessionLocal
 import models
 from embeddings_service import encoder
 from gaurd_service import guard_firewall
+from logger_service import sys_logger
 
 # Initialize our AI clients inside the isolated worker environment
 client = Groq(api_key=os.getenv("GROQ_API_KEY"))
@@ -224,6 +225,16 @@ def step_1_match_knowledge(ticket_id: int) -> dict:
         
         # 🔥 BROADCAST IMMEDIATELY DOWN THE STREAM
         broadcast_pipeline_update(ticket_id, "Knowledge Matched", ticket.action_taken)
+        
+        # Replace old loose prints with structural tracing logs
+        sys_logger.info(
+            f"Celery Step 1 Complete: Vector match processed cleanly for Ticket #{ticket_id}",
+            extra={"extra_context": {
+                "ticket_id": ticket_id,
+                "workflow_step": "knowledge_match",
+                "status": "Success"
+            }}
+        )
         return {"ticket_id": ticket_id, "context": matched_context}
     finally:
         db.close()
@@ -272,8 +283,15 @@ def step_3_notify_admin(prev_step_data: dict) -> str:
     try:
         ticket = db.query(models.Ticket).filter(models.Ticket.id == ticket_id).first()
         
-        # Simulate firing off a secure webhook dispatch link to an operations channels
-        print(f"📢 NOTIFICATION LOG: Ticket #{ticket_id} has finished background agent automation pipeline!")
+        # Upgrade your terminal log triggers to strict production compliance
+        sys_logger.warning(
+            f"Celery Pipeline Sealed: Final notification broadcast completed for Ticket #{ticket_id}",
+            extra={"extra_context": {
+                "ticket_id": ticket_id,
+                "workflow_step": "admin_notified",
+                "pipeline_state": "CLOSED"
+            }}
+        )
         
         ticket.urgency = "Admin Notified"
         db.commit()

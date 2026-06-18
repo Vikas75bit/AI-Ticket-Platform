@@ -2,9 +2,11 @@ import os
 import json
 import asyncio
 from pathlib import Path
+import time
 from datetime import datetime, timezone
-from fastapi import FastAPI, status, Depends, HTTPException, WebSocket, WebSocketDisconnect
+from fastapi import FastAPI, status, Depends, HTTPException, WebSocket, WebSocketDisconnect, Request
 from typing import List
+from logger_service import sys_logger
 from fastapi.responses import StreamingResponse
 import redis.asyncio as aioredis
 from pydantic import AliasChoices, BaseModel, Field
@@ -54,6 +56,34 @@ app.add_middleware(
     allow_methods=["GET", "POST", "PUT", "DELETE"], # Lock down to explicit required HTTP verbs
     allow_headers=["Content-Type", "Authorization"],
 )
+
+@app.middleware("http")
+async def audit_api_performance_layer(request: Request, call_next):
+    """
+    Asynchronously intercepts every single inbound cloud route request,
+    calculates exact database/network latency speeds, and outputs metrics in JSON.
+    """
+    start_time = time.time()
+    
+    # Let the request pass down the pipeline routing channels smoothly
+    response = await call_next(request)
+    
+    execution_duration_ms = round((time.time() - start_time) * 1000, 2)
+    
+    # Package context telemetry to slide effortlessly into our structured logger
+    sys_logger.info(
+        f"API Request Finalized: {request.method} {request.url.path} -> Status {response.status_code}",
+        extra={"extra_context": {
+            "http_method": request.method,
+            "path": request.url.path,
+            "status_code": response.status_code,
+            "latency_ms": execution_duration_ms,
+            "client_ip": request.client.host if request.client else "unknown"
+        }}
+    )
+    
+    return response
+
 # Database Session Dependency
 def get_db():
     db = SessionLocal()
