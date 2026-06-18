@@ -1,35 +1,27 @@
 import os
-from pydantic import Field  # Clean V2 core import
+from pydantic import Field
 from pydantic_settings import BaseSettings, SettingsConfigDict
 from typing import List
 
 class ProductionSettings(BaseSettings):
-    # ─── NATIVE V2 ALIAS ALIGNMENT ───────────────────────────────────────────
-    # We define the variable as a Field and pass an explicit validation_alias.
-    # It will pull 'SUPABASE_DB_URL' from Railway like an absolute charm.
-    DATABASE_URL: str = Field(validation_alias="SUPABASE_DB_URL")
+    # Standard lowercase Python attributes
+    database_url: str = Field(validation_alias="SUPABASE_DB_URL")
+    groq_api_key: str
+    redis_url: str = "redis://redis_broker:6379/0"
+    env: str = "development"
     
-    GROQ_API_KEY: str
-    REDIS_URL: str = os.getenv("REDIS_URL", "redis://redis_broker:6379/0")
-    ENV: str = "development"
-    
-    ALLOWED_ORIGINS: List[str] = [
+    allowed_origins: List[str] = [
         "http://localhost:5173",
         "http://localhost:3000"
     ]
 
+    # ─── HARDENED V2 CONFIGURATION ───────────────────────────────────────────
+    # case_sensitive=False tells Pydantic to map uppercase cloud keys (like GROQ_API_KEY or ENV)
+    # straight to our clean lowercase class attributes smoothly.
     model_config = SettingsConfigDict(
         env_file=".env" if os.path.exists(".env") else None,
-        extra="ignore"
+        extra="ignore",
+        case_sensitive=False
     )
 
 settings = ProductionSettings()
-
-# In config.py right before the settings assignment block:
-class ProductionSettings(BaseSettings):
-    DATABASE_URL: str = Field(validation_alias="SUPABASE_DB_URL")
-    # ... rest remains identical
-
-settings = ProductionSettings()
-# Force clean any messy copy-paste spaces instantly
-settings.DATABASE_URL = settings.DATABASE_URL.strip()
