@@ -24,3 +24,12 @@ class ProductionSettings(BaseSettings):
     )
 
 settings = ProductionSettings()
+
+# In config.py right before the settings assignment block:
+class ProductionSettings(BaseSettings):
+    DATABASE_URL: str = Field(validation_alias="SUPABASE_DB_URL")
+    # ... rest remains identical
+
+settings = ProductionSettings()
+# Force clean any messy copy-paste spaces instantly
+settings.DATABASE_URL = settings.DATABASE_URL.strip()
