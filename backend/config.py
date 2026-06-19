@@ -25,7 +25,7 @@ class ProductionSettings(BaseSettings):
         case_sensitive=False
     )
 
-settings = ProductionSettings()
+
 
 # (At the very bottom of config.py)
 settings = ProductionSettings()
