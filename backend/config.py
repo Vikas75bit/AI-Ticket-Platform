@@ -26,3 +26,11 @@ class ProductionSettings(BaseSettings):
     )
 
 settings = ProductionSettings()
+
+# (At the very bottom of config.py)
+settings = ProductionSettings()
+
+# ─── THE BULLETPROOF SANITIZER ──────────────────────────────────────────
+# This violently strips any invisible spaces or newlines that accidentally 
+# get pasted into the Railway environment variables dashboard.
+settings.DATABASE_URL = settings.DATABASE_URL.strip()
