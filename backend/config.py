@@ -5,10 +5,10 @@ from typing import List
 
 class ProductionSettings(BaseSettings):
     # Standard lowercase Python attributes
-    database_url: str = Field(validation_alias="SUPABASE_DB_URL")
-    groq_api_key: str
-    redis_url: str = "redis://redis_broker:6379/0"
-    env: str = "development"
+    DATABASE_URL: str = Field(validation_alias="SUPABASE_DB_URL")
+    GROQ_API_KEY: str
+    REDIS_URL: str = "redis://redis_broker:6379/0"
+    ENV: str = "development"
     
     allowed_origins: List[str] = [
         "http://localhost:5173",
