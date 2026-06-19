@@ -51,7 +51,7 @@ app = FastAPI(
 # Restricts inbound API cross-origin fetch requests strictly to authorized frontend domains
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=settings.ALLOWED_ORIGINS,
+    allow_origins=settings.allowed_origins,
     allow_credentials=True,
     allow_methods=["GET", "POST", "PUT", "DELETE"], # Lock down to explicit required HTTP verbs
     allow_headers=["Content-Type", "Authorization"],
