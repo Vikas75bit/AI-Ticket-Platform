@@ -8,15 +8,16 @@ from fastapi import FastAPI, status, Depends, HTTPException, WebSocket, WebSocke
 from typing import List
 from logger_service import sys_logger
 from fastapi.responses import StreamingResponse
-import redis.asyncio as aioredis
+
+BASE_DIR = Path(__file__).resolve().parent
+from dotenv import load_dotenv
+# Load local .env configurations from this app folder, regardless of where uvicorn is run.
+load_dotenv(BASE_DIR / ".env")
+
 from pydantic import AliasChoices, BaseModel, Field
 from groq import Groq
 import chromadb
-from dotenv import load_dotenv
-from worker import celery_app
 from embeddings_service import encoder
-from celery import chain
-import worker as tasks
 from gaurd_service import guard_firewall
 from services.ai_agent import (
     analyze_ticket,
@@ -34,11 +35,6 @@ from config import settings
 # Auto-create tables in database on startup
 models.Base.metadata.create_all(bind=engine)
 
-BASE_DIR = Path(__file__).resolve().parent
-
-# Load local .env configurations from this app folder, regardless of where uvicorn is run.
-load_dotenv(BASE_DIR / ".env")
-
 app = FastAPI(
     title="Enterprise AI Ticket Automation Platform",
     version="1.0.0",
@@ -51,7 +47,7 @@ app = FastAPI(
 # Restricts inbound API cross-origin fetch requests strictly to authorized frontend domains
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=settings.allowed_origins,
+    allow_origins=settings.ALLOWED_ORIGINS,
     allow_credentials=True,
     allow_methods=["GET", "POST", "PUT", "DELETE"], # Lock down to explicit required HTTP verbs
     allow_headers=["Content-Type", "Authorization"],
@@ -190,34 +186,47 @@ def home():
     return {"message": "AI Agentic RAG Ticket API Running"}
 
 @app.post("/analyze-ticket", status_code=202)
-def analyze_ticket_async(ticket: Ticket):
+def analyze_ticket_async(ticket: Ticket, db: Session = Depends(get_db)):
     """
-    Accepts the customer ticket data instantly, offloads it to the 
-    Redis queue for Celery to process, and returns a tracking token immediately.
+    Accepts the customer ticket data, runs the pipeline synchronously, 
+    and returns a success status.
     """
     try:
-        # Convert our Pydantic model into a serializable standard Python dictionary
-        ticket_payload = {
-            "sender": ticket.sender,
-            "subject": ticket.subject,
-            "message": ticket.message
-        }
+        from worker import (
+            step_1_match_knowledge,
+            step_2_generate_resolution,
+            step_3_notify_admin
+        )
         
-        # OBLITERATE THE BOTTLENECK: Offload the task to Redis using Celery's .delay() method
-        # This execution takes less than 5 milliseconds!
-        task = celery_app.send_task("tasks.process_ticket_async", args=[ticket_payload])
+        # 1. Instantly commit a baseline skeleton ticket record to the database
+        new_ticket = models.Ticket(
+            sender=ticket.sender,
+            subject=ticket.subject,
+            description=ticket.message,
+            summary="Queued",
+            urgency="Queued",  # Starting state status
+            department="Operations",
+            action_taken="Worker allocation pending..."
+        )
+        db.add(new_ticket)
+        db.commit()
+        db.refresh(new_ticket)
         
-        # Hand back an instant 202 Accepted response along with the tracking identifier
+        # Run the pipeline synchronously
+        result1 = step_1_match_knowledge(new_ticket.id)
+        result2 = step_2_generate_resolution(result1)
+        step_3_notify_admin(result2)
+        
         return {
-            "status": "Queued",
-            "message": "Ticket successfully offloaded to background execution queue.",
-            "task_id": task.id
+            "status": "Success",
+            "message": "Ticket processed synchronously.",
+            "task_id": f"sync_{new_ticket.id}"
         }
         
     except Exception as e:
         return {
-            "status": "Queue Error",
-            "message": f"Failed to push task into background broker: {str(e)}"
+            "status": "Error",
+            "message": f"Failed to process ticket: {str(e)}"
         }
 
 @app.get("/tickets")
@@ -286,6 +295,19 @@ def ingest_customer_ticket(ticket_data: TicketCreate, db: Session = Depends(get_
     db.commit()
     db.refresh(new_ticket)
 
+    from worker import (
+        step_1_match_knowledge,
+        step_2_generate_resolution,
+        step_3_notify_admin
+    )
+
+    try:
+        result1 = step_1_match_knowledge(new_ticket.id)
+        result2 = step_2_generate_resolution(result1)
+        step_3_notify_admin(result2)
+    except Exception as ai_err:
+        print(f"AI Pipeline Error: {ai_err}")
+
     try:
         send_email(
             recipient=ticket_data.sender,
@@ -315,24 +337,10 @@ AI Ticket Platform
             f"Email notification failed: {e}"
         )
 
-    # 4. TRIGGER THE ASYNC AGENTIC CHAIN WORKFLOW
-    # We stitch our micro-tasks together. Task 1 passes its dict to Task 2, Task 2 to Task 3!
-    agentic_pipeline = chain(
-        tasks.step_1_match_knowledge.s(new_ticket.id),
-        tasks.step_2_generate_resolution.s(),
-        tasks.step_3_notify_admin.s()
-    )
-    
-    # Fire the entire pipeline off our main thread straight into Redis!
-    try:
-        agentic_pipeline.apply_async()
-    except Exception as celery_err:
-        print(f"Failed to queue background agentic pipeline (is Redis running?): {celery_err}")
-
     # 5. Return the payload response instantly back to the frontend UI layout frame
     return {
         "status": "Success",
-        "message": "Ticket safely queued. Agent multi-step automation workflow chain initialized in background.",
+        "message": "Ticket safely processed. Agent multi-step automation workflow chain executed synchronously.",
         "ticket_id": new_ticket.id
     }
 
@@ -624,44 +632,13 @@ async def stream_ticket_events():
     data tokens directly into the connected React view browser.
     """
     async def event_generator():
-        # Open an asynchronous connection to the Redis broker
-        async_redis = aioredis.Redis(host='localhost', port=6379, db=0, decode_responses=True)
-        pubsub = async_redis.pubsub()
-        
         try:
-            try:
-                await pubsub.subscribe("ticket_updates")
-            except Exception as e:
-                # Gracefully yield error packet to browser instead of throwing traceback
-                yield f"data: {{\"error\": \"Failed to connect to Redis broker: {str(e)}\"}}\n\n"
-                await asyncio.sleep(2.0)
-                await async_redis.close()
-                return
-
             while True:
-                try:
-                    # Listen endlessly for messages broadcasting down the channel pipes
-                    message = await pubsub.get_message(ignore_subscribe_messages=True, timeout=1.0)
-                    if message:
-                        data_packet = message["data"]
-                        # SSE protocol demands a strict 'data: <payload>\n\n' format rule!
-                        yield f"data: {data_packet}\n\n"
-                except Exception as e:
-                    yield f"data: {{\"error\": \"Redis connection interrupted: {str(e)}\"}}\n\n"
-                    await asyncio.sleep(2.0)
-                    try:
-                        await pubsub.subscribe("ticket_updates")
-                    except Exception:
-                        pass
-                # Keep the thread breathing space clear
-                await asyncio.sleep(0.1)
+                # Keep-alive heartbeat comment to prevent client connection timeout
+                yield ": heartbeat\n\n"
+                await asyncio.sleep(15.0)
         except asyncio.CancelledError:
-            # Safely tear down connections if a user closes their browser dashboard tab
-            try:
-                await pubsub.unsubscribe("ticket_updates")
-                await async_redis.close()
-            except Exception:
-                pass
+            pass
 
     return StreamingResponse(event_generator(), media_type="text/event-stream")
 
@@ -907,6 +884,9 @@ async def admin_override_socket_gateway(websocket: WebSocket, db: Session = Depe
                     
             except Exception as inner_err:
                 await websocket.send_text(json.dumps({"type": "ERROR", "message": f"Frame compilation failure: {str(inner_err)}"}))
+
+        except WebSocketDisconnect:
+        console_manager.disconnect(websocket)
                 
     except WebSocketDisconnect:
         console_manager.disconnect(websocket)
