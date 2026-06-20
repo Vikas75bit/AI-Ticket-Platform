@@ -842,50 +842,80 @@ console_manager = CommandConsoleManager()
 
 # ─── 2. THE BI-DIRECTIONAL OVERRIDE WEBSOCKET ROUTE ─────────────────────
 @app.websocket("/api/v1/ws/admin")
-async def admin_override_socket_gateway(websocket: WebSocket, db: Session = Depends(get_db)):
-    """
-    Full-duplex WebSocket gateway. Listens for live admin command strings, 
-    executes rapid mutations, and streams frame updates back up the pipe instantly.
-    """
+async def admin_override_socket_gateway(
+    websocket: WebSocket,
+    db: Session = Depends(get_db)
+):
     await console_manager.connect(websocket)
-    
+
     try:
-        # Keep the socket tunnel open endlessly listening for data frames
         while True:
             raw_data = await websocket.receive_text()
             print(f"📥 RAW COMMAND FRAME CAUGHT: {raw_data}")
-            
+
             try:
-                # Expecting incoming JSON frames like: {"command": "/override", "ticket_id": 1, "status": "Critical"}
                 payload = json.loads(raw_data)
+
                 command = payload.get("command")
                 ticket_id = payload.get("ticket_id")
                 new_status = payload.get("status")
-                
-                # PROCESS CRITICAL OVERRIDE ROUTINE
+
                 if command == "/override" and ticket_id:
-                    # Snatch the ticket straight out of the database, bypassing the queue lines
-                    ticket = db.query(models.Ticket).filter(models.Ticket.id == ticket_id).first()
+
+                    ticket = (
+                        db.query(models.Ticket)
+                        .filter(models.Ticket.id == ticket_id)
+                        .first()
+                    )
+
                     if ticket:
                         ticket.urgency = new_status
-                        ticket.action_taken = f"[MANUAL ADMIN OVERRIDE EXECUTION]: Status hot-swapped over live WebSocket terminal connection."
+                        ticket.action_taken = (
+                            "[MANUAL ADMIN OVERRIDE EXECUTION]: "
+                            "Status hot-swapped over live WebSocket terminal connection."
+                        )
+
                         db.commit()
-                        
-                        # Return success frame to the user instantly over the same socket connection
+
                         success_reply = json.dumps({
                             "type": "SUCCESS",
-                            "message": f"System Hijack Complete. Ticket #{ticket_id} status forced to '{new_status}'."
+                            "message": (
+                                f"System Hijack Complete. "
+                                f"Ticket #{ticket_id} status forced to '{new_status}'."
+                            )
                         })
-                        await console_manager.send_private_message(success_reply, websocket)
-                    else:
-                        await console_manager.send_private_message(json.dumps({"type": "ERROR", "message": "Target Ticket ID not found."}), websocket)
-                else:
-                    await console_manager.send_private_message(json.dumps({"type": "ERROR", "message": "Unknown command syntax structure."}), websocket)
-                    
-            except Exception as inner_err:
-                await websocket.send_text(json.dumps({"type": "ERROR", "message": f"Frame compilation failure: {str(inner_err)}"}))
 
-        except WebSocketDisconnect:
+                        await console_manager.send_private_message(
+                            success_reply,
+                            websocket
+                        )
+
+                    else:
+                        await console_manager.send_private_message(
+                            json.dumps({
+                                "type": "ERROR",
+                                "message": "Target Ticket ID not found."
+                            }),
+                            websocket
+                        )
+
+                else:
+                    await console_manager.send_private_message(
+                        json.dumps({
+                            "type": "ERROR",
+                            "message": "Unknown command syntax structure."
+                        }),
+                        websocket
+                    )
+
+            except Exception as inner_err:
+                await websocket.send_text(
+                    json.dumps({
+                        "type": "ERROR",
+                        "message": f"Frame compilation failure: {str(inner_err)}"
+                    })
+                )
+
+    except WebSocketDisconnect:
         console_manager.disconnect(websocket)
-                
 
