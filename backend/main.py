@@ -888,5 +888,4 @@ async def admin_override_socket_gateway(websocket: WebSocket, db: Session = Depe
         except WebSocketDisconnect:
         console_manager.disconnect(websocket)
                 
-    except WebSocketDisconnect:
-        console_manager.disconnect(websocket)
+
