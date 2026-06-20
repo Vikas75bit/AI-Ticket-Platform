@@ -10,11 +10,11 @@ class ProductionSettings(BaseSettings):
     REDIS_URL: str = "redis://redis_broker:6379/0"
     ENV: str = "development"
     
-    allowed_origins: List[str] = [
-        "http://localhost:5173",
-        "http://localhost:3000",
-        "https://ai-ticket-platform.vercel.app"
-    ]
+    ALLOWED_ORIGINS: List[str] = [
+    "http://localhost:5173",
+    "http://localhost:3000",
+    "https://ai-ticket-platform.vercel.app",
+    ] 
 
     # ─── HARDENED V2 CONFIGURATION ───────────────────────────────────────────
     # case_sensitive=False tells Pydantic to map uppercase cloud keys (like GROQ_API_KEY or ENV)
