@@ -1,26 +1,22 @@
-import os
-from groq import Groq
+from sentence_transformers import SentenceTransformer
 
 class EmbeddingService:
 
     def __init__(self):
-
-        self.client = Groq(
-            api_key=os.getenv("GROQ_API_KEY")
+        self.model = SentenceTransformer(
+            "BAAI/bge-base-en-v1.5"
         )
-
-        self.model = "embeddinggemma-300m"
 
     def get_vector(
         self,
         text: str
     ) -> list[float]:
 
-        response = self.client.embeddings.create(
-            model=self.model,
-            input=text
+        vector = self.model.encode(
+            text,
+            normalize_embeddings=True
         )
 
-        return response.data[0].embedding
+        return vector.tolist()
 
 encoder = EmbeddingService()
