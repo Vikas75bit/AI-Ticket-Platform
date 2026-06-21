@@ -162,12 +162,27 @@ Description:
         # Run our Day 18 output firewall guardrail check to prevent data leaks or bad styling
         validated_resolution = guard_firewall.verify_output(raw_llm_output, context)
         
-        ticket.urgency = "LLM Drafting Complete"
-        ticket.action_taken = validated_resolution
+        # Extract fields from the validated LLM output
+        import re
+
+        def extract_field(field_name: str) -> str:
+            pattern = rf"(?:^|\n)\s*\*?\*?{field_name}\*?\*?:\s*(.*?)(?=\n\s*\*?\*?(?:Department|Priority|Summary|Action):|$)"
+            match = re.search(pattern, validated_resolution, re.DOTALL | re.IGNORECASE)
+            return match.group(1).strip() if match else ""
+
+        extracted_department = extract_field("Department") or ticket.department or "General"
+        extracted_priority = extract_field("Priority") or ticket.urgency or "Medium"
+        extracted_summary = extract_field("Summary") or ticket.summary or ""
+        extracted_action = extract_field("Action") or validated_resolution
+
+        ticket.department = extracted_department
+        ticket.urgency = extracted_priority
+        ticket.summary = extracted_summary
+        ticket.action_taken = extracted_action
         db.commit()
         
         # 🔥 BROADCAST IMMEDIATELY DOWN THE STREAM
-        broadcast_pipeline_update(ticket_id, "LLM Drafting Complete", validated_resolution)
+        broadcast_pipeline_update(ticket_id, ticket.urgency, ticket.action_taken)
         return {"ticket_id": ticket_id, "resolution": validated_resolution}
     finally:
         db.close()
