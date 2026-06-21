@@ -126,9 +126,38 @@ def step_2_generate_resolution(prev_step_data: dict) -> dict:
     try:
         ticket = db.query(models.Ticket).filter(models.Ticket.id == ticket_id).first()
         
-        # Simulate our high-speed Groq Llama 3.3 contextual text generation string
-        # In your active environment, this hooks straight into your Groq chat.completions client
-        raw_llm_output = f"Automated Resolution: Evaluated client claims using custom asset parameter background rules. Action Matrix Rule applied: {context}"
+        response = client.chat.completions.create(
+            model="llama-3.3-70b-versatile",
+            messages=[
+                {
+                    "role": "system",
+                    "content": f"""
+You are an enterprise support triage AI.
+
+Company Context:
+{context}
+
+Analyze the ticket and return:
+
+Department:
+Priority:
+Summary:
+Action:
+"""
+                },
+                {
+                    "role": "user",
+                    "content": f"""
+Subject: {ticket.subject}
+
+Description:
+{ticket.description}
+"""
+                }
+            ]
+        )
+
+        raw_llm_output = response.choices[0].message.content
         
         # Run our Day 18 output firewall guardrail check to prevent data leaks or bad styling
         validated_resolution = guard_firewall.verify_output(raw_llm_output, context)
