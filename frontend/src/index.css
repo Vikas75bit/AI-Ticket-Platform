@@ -1,22 +1,22 @@
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
 
 @import "tailwindcss";
 
 @theme {
-  /* Brand Colors */
   --color-brand-bg: #09090b;
   --color-brand-surface: #18181b;
   --color-brand-elevated: #27272a;
-  --color-brand-border: #3f3f46;
+  --color-brand-border: #27272a;
+  --color-brand-border-strong: #3f3f46;
   --color-brand-primary: #6366f1;
-  --color-brand-success: #10b981;
+  --color-brand-success: #22c55e;
   --color-brand-warning: #f59e0b;
   --color-brand-danger: #ef4444;
   --color-brand-text-primary: #fafafa;
   --color-brand-text-secondary: #a1a1aa;
+  --color-brand-text-muted: #71717a;
 }
 
-/* Global Reset & Base Styles */
 html, body {
   margin: 0;
   padding: 0;
@@ -26,16 +26,15 @@ html, body {
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   line-height: 1.5;
+  font-size: 14px;
 }
 
-/* Typography Hierarchy Enhancements */
 h1, h2, h3, h4, h5, h6 {
   color: var(--color-brand-text-primary);
   font-weight: 600;
-  letter-spacing: -0.02em;
+  letter-spacing: -0.01em;
 }
 
-/* Sleek Scrollbar (Linear/Vercel inspired) */
 ::-webkit-scrollbar {
   width: 6px;
   height: 6px;
@@ -46,21 +45,28 @@ h1, h2, h3, h4, h5, h6 {
 }
 
 ::-webkit-scrollbar-thumb {
-  background: var(--color-brand-border);
-  border-radius: 4px;
+  background: var(--color-brand-elevated);
+  border-radius: 3px;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: var(--color-brand-text-secondary);
+  background: var(--color-brand-border-strong);
 }
 
 ::selection {
-  background: rgba(99, 102, 241, 0.3); /* Primary color with opacity */
+  background: rgba(99, 102, 241, 0.25);
   color: var(--color-brand-text-primary);
 }
 
-/* Focus Rings */
 *:focus-visible {
   outline: 2px solid var(--color-brand-primary);
-  outline-offset: 2px;
+  outline-offset: 1px;
+}
+
+select {
+  cursor: pointer;
+}
+
+button {
+  cursor: pointer;
 }
