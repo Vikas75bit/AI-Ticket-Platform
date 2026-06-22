@@ -93,7 +93,7 @@ def step_1_match_knowledge(ticket_id: int) -> dict:
         matched_context = match.content if match else "No matching company policy rules found."
         
         # Update progress tracking metadata on the ticket
-        ticket.urgency = "Knowledge Matched"
+        ticket.workflow_stage = "Knowledge Matched"
         ticket.action_taken = f"[System Step 1 Complete] Context extracted."
         db.commit()
         
@@ -177,12 +177,13 @@ Description:
 
         ticket.department = extracted_department
         ticket.urgency = extracted_priority
+        ticket.workflow_stage = "LLM Drafting Complete"
         ticket.summary = extracted_summary
         ticket.action_taken = extracted_action
         db.commit()
         
         # 🔥 BROADCAST IMMEDIATELY DOWN THE STREAM
-        broadcast_pipeline_update(ticket_id, ticket.urgency, ticket.action_taken)
+        broadcast_pipeline_update(ticket_id, "LLM Drafting Complete", ticket.action_taken)
         return {"ticket_id": ticket_id, "resolution": validated_resolution}
     finally:
         db.close()
@@ -209,7 +210,7 @@ def step_3_notify_admin(prev_step_data: dict) -> str:
             }}
         )
         
-        ticket.urgency = "Admin Notified"
+        ticket.workflow_stage = "Admin Notified"
         db.commit()
         
         # 🔥 BROADCAST THE FINAL COMPLETION FLAG
