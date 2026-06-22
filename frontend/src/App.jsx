@@ -212,7 +212,7 @@ function App() {
         setTickets((prevTickets) =>
           prevTickets.map((ticket) =>
             ticket.id === liveUpdate.ticket_id
-              ? { ...ticket, urgency: liveUpdate.status, action_taken: liveUpdate.action_taken }
+              ? { ...ticket, workflow_stage: liveUpdate.status, action_taken: liveUpdate.action_taken }
               : ticket
           )
         );
@@ -642,7 +642,19 @@ function App() {
                             </div>
                           </td>
                           <td className="px-4 py-3">
-                            <div className="text-[10px] text-brand-text-primary font-medium">{ticket.department}</div>
+                            <div className="flex items-center gap-1.5">
+                              <span className="text-[10px] text-brand-text-primary font-medium">{ticket.department}</span>
+                              {ticket.workflow_stage && (
+                                <span className={`px-1 py-0.2 rounded text-[8px] font-mono border ${
+                                  ticket.workflow_stage === "Queued" ? "bg-zinc-500/10 text-zinc-400 border-zinc-500/20" :
+                                  ticket.workflow_stage === "Knowledge Matched" ? "bg-blue-500/10 text-blue-400 border-blue-500/20" :
+                                  ticket.workflow_stage === "LLM Drafting Complete" ? "bg-purple-500/10 text-purple-400 border-purple-500/20" :
+                                  "bg-emerald-500/10 text-emerald-400 border-emerald-500/20"
+                                }`}>
+                                  {ticket.workflow_stage}
+                                </span>
+                              )}
+                            </div>
                             <div className="text-[10px] text-brand-text-secondary mt-0.5 max-w-[150px] truncate" title={ticket.action_taken}>
                               {ticket.action_taken || "Awaiting triage"}
                             </div>
