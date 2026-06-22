@@ -3,30 +3,35 @@ import axios from "axios";
 import { supabase } from "./supabase";
 import { motion, AnimatePresence } from "framer-motion";
 import {
-  Ticket,
   Search,
-  Activity,
   BarChart3,
   BookOpen,
   AlertCircle,
-  RefreshCw,
   Send,
   CheckCircle,
   Trash2,
   LogOut,
-  ArrowRight,
-  ShieldAlert,
   BrainCircuit,
   Sparkles,
   Loader2,
-  ExternalLink,
-  ChevronRight,
-  Filter,
-  Layers,
-  TrendingUp,
   MessageSquare,
   X,
-  User
+  User,
+  Inbox,
+  Clock,
+  Circle,
+  Hash,
+  ChevronDown,
+  MoreHorizontal,
+  ArrowUpRight,
+  Calendar,
+  Mail,
+  Building2,
+  Tag,
+  Activity,
+  TrendingUp,
+  Plus,
+  RefreshCw,
 } from "lucide-react";
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || "http://localhost:8000";
@@ -45,7 +50,106 @@ import {
   CartesianGrid,
 } from "recharts";
 
+/* ═══════════════════════════════════════════════════════════════
+   HELPERS
+   ═══════════════════════════════════════════════════════════════ */
+
+const STATUS_CONFIG = {
+  Open:          { color: "#f97316", bg: "rgba(249,115,22,0.1)",  label: "Open" },
+  "In Progress": { color: "#6366f1", bg: "rgba(99,102,241,0.1)",  label: "In Progress" },
+  Resolved:      { color: "#22c55e", bg: "rgba(34,197,94,0.1)",   label: "Resolved" },
+  Closed:        { color: "#71717a", bg: "rgba(113,113,122,0.1)", label: "Closed" },
+};
+
+const PRIORITY_CONFIG = {
+  Critical: { color: "#ef4444", dot: "#ef4444" },
+  High:     { color: "#ef4444", dot: "#ef4444" },
+  Medium:   { color: "#f59e0b", dot: "#f59e0b" },
+  Low:      { color: "#22c55e", dot: "#22c55e" },
+};
+
+function timeAgo(dateStr) {
+  if (!dateStr) return "";
+  const now = new Date();
+  const date = new Date(dateStr);
+  const diffMs = now - date;
+  const diffMins = Math.floor(diffMs / 60000);
+  if (diffMins < 1) return "now";
+  if (diffMins < 60) return `${diffMins}m`;
+  const diffHours = Math.floor(diffMins / 60);
+  if (diffHours < 24) return `${diffHours}h`;
+  const diffDays = Math.floor(diffHours / 24);
+  if (diffDays < 30) return `${diffDays}d`;
+  return date.toLocaleDateString("en-US", { month: "short", day: "numeric" });
+}
+
+function formatDate(dateStr) {
+  if (!dateStr) return "—";
+  return new Date(dateStr).toLocaleDateString("en-US", {
+    month: "short", day: "numeric", year: "numeric", hour: "numeric", minute: "2-digit",
+  });
+}
+
+const CHART_COLORS = ["#ef4444", "#f59e0b", "#22c55e"];
+
+/* ═══════════════════════════════════════════════════════════════
+   INLINE UI COMPONENTS
+   ═══════════════════════════════════════════════════════════════ */
+
+function StatusBadge({ status }) {
+  const cfg = STATUS_CONFIG[status] || STATUS_CONFIG.Open;
+  return (
+    <span
+      style={{ color: cfg.color, background: cfg.bg }}
+      className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-[11px] font-medium leading-none"
+    >
+      <span style={{ background: cfg.color }} className="w-1.5 h-1.5 rounded-full shrink-0" />
+      {cfg.label}
+    </span>
+  );
+}
+
+function PriorityIndicator({ priority, size = "sm" }) {
+  const cfg = PRIORITY_CONFIG[priority] || PRIORITY_CONFIG.Medium;
+  const dim = size === "sm" ? "w-2 h-2" : "w-2.5 h-2.5";
+  return <span style={{ background: cfg.dot }} className={`${dim} rounded-full shrink-0`} />;
+}
+
+function PriorityBadge({ priority }) {
+  const cfg = PRIORITY_CONFIG[priority] || PRIORITY_CONFIG.Medium;
+  return (
+    <span style={{ color: cfg.color }} className="text-[11px] font-medium leading-none">
+      {priority || "Medium"}
+    </span>
+  );
+}
+
+function SectionLabel({ children }) {
+  return (
+    <h3 className="text-[11px] font-semibold uppercase tracking-wider text-brand-text-muted mb-3">
+      {children}
+    </h3>
+  );
+}
+
+function MetaRow({ icon: Icon, label, children }) {
+  return (
+    <div className="flex items-start gap-3 py-2">
+      <Icon className="w-3.5 h-3.5 text-brand-text-muted mt-0.5 shrink-0" />
+      <div className="flex-1 min-w-0">
+        <div className="text-[11px] text-brand-text-muted mb-0.5">{label}</div>
+        <div className="text-[13px] text-brand-text-primary">{children}</div>
+      </div>
+    </div>
+  );
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   MAIN APP COMPONENT
+   ═══════════════════════════════════════════════════════════════ */
+
 function App() {
+  /* ── State ── */
   const [analytics, setAnalytics] = useState(null);
   const [operationsAnalytics, setOperationsAnalytics] = useState(null);
   const [tickets, setTickets] = useState([]);
@@ -75,15 +179,16 @@ function App() {
   const [knowledgeContent, setKnowledgeContent] = useState("");
   const [aiReply, setAiReply] = useState("");
 
+  const [activeView, setActiveView] = useState("inbox");
+
+  /* ── Effects ── */
   useEffect(() => {
     setReadComments(JSON.parse(localStorage.getItem("read_comments") || "{}"));
   }, []);
 
   const showNotification = (message, type = "error") => {
     setNotification({ message, type });
-    setTimeout(() => {
-      setNotification({ message: "", type: "" });
-    }, 5000);
+    setTimeout(() => setNotification({ message: "", type: "" }), 4000);
   };
 
   const loadComments = async (ticketId) => {
@@ -93,13 +198,12 @@ function App() {
       const data = await response.json();
       const commentsArray = Array.isArray(data) ? data : [];
       setComments(commentsArray);
-
       const readMap = JSON.parse(localStorage.getItem("read_comments") || "{}");
       readMap[ticketId] = commentsArray.length;
       localStorage.setItem("read_comments", JSON.stringify(readMap));
       setReadComments(readMap);
-    } catch (error) {
-      console.error(error);
+    } catch (err) {
+      console.error(err);
       setComments([]);
     }
   };
@@ -118,10 +222,10 @@ function App() {
       if (!response.ok) throw new Error("Failed to post comment");
       setNewComment("");
       loadComments(selectedCommentTicket.id);
-      showNotification("Comment posted successfully!", "success");
-    } catch (error) {
-      console.error(error);
-      showNotification(error.message, "error");
+      showNotification("Comment posted.", "success");
+    } catch (err) {
+      console.error(err);
+      showNotification(err.message, "error");
     }
   };
 
@@ -151,8 +255,8 @@ function App() {
       if (!response.ok) throw new Error("Failed to fetch operations analytics");
       const data = await response.json();
       setOperationsAnalytics(data);
-    } catch (error) {
-      console.error("Operations analytics failed:", error);
+    } catch (err) {
+      console.error("Operations analytics fetch failed:", err);
     }
   };
 
@@ -162,7 +266,7 @@ function App() {
       .then((response) => {
         setTickets(Array.isArray(response.data) ? response.data : []);
       })
-      .catch((err) => console.error("Failed to query records stream:", err));
+      .catch((err) => console.error("Failed to fetch tickets:", err));
   };
 
   const fetchKnowledge = async () => {
@@ -170,8 +274,8 @@ function App() {
       const response = await fetch(`${API_BASE_URL}/knowledge`);
       const data = await response.json();
       setKnowledge(data || []);
-    } catch (error) {
-      console.error("Knowledge fetch failed", error);
+    } catch (err) {
+      console.error("Knowledge fetch failed:", err);
     }
   };
 
@@ -189,11 +293,11 @@ function App() {
         { event: "*", schema: "public", table: "tickets" },
         (payload) => {
           const activity = {
-            time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' }),
+            time: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit", second: "2-digit" }),
             event: payload.eventType,
             ticketId: payload.new?.id || payload.old?.id,
           };
-          setActivityFeed((current) => [activity, ...current.slice(0, 9)]);
+          setActivityFeed((current) => [activity, ...current.slice(0, 19)]);
           fetchTickets();
           fetchAnalytics();
           fetchOperationsAnalytics();
@@ -209,23 +313,24 @@ function App() {
     eventSource.onmessage = (event) => {
       try {
         const liveUpdate = JSON.parse(event.data);
-        setTickets((prevTickets) =>
-          prevTickets.map((ticket) =>
-            ticket.id === liveUpdate.ticket_id
-              ? { ...ticket, workflow_stage: liveUpdate.status, action_taken: liveUpdate.action_taken }
-              : ticket
+        setTickets((prev) =>
+          prev.map((t) =>
+            t.id === liveUpdate.ticket_id
+              ? { ...t, workflow_stage: liveUpdate.status, action_taken: liveUpdate.action_taken }
+              : t
           )
         );
         fetchAnalytics();
         fetchOperationsAnalytics();
       } catch (err) {
-        console.error("Error parsing live update packet:", err);
+        console.error("SSE parse error:", err);
       }
     };
-    eventSource.onerror = (err) => console.error("SSE Streaming connection error...", err);
+    eventSource.onerror = () => {};
     return () => eventSource.close();
   }, []);
 
+  /* ── Business Logic ── */
   const handleApplyOverride = async (e) => {
     e.preventDefault();
     if (!selectedTicket || !overrideText.trim()) return;
@@ -239,9 +344,9 @@ function App() {
       fetchTickets();
       setSelectedTicket(null);
       setOverrideText("");
-      showNotification("Override applied successfully!", "success");
+      showNotification("Override applied.", "success");
     } catch (err) {
-      showNotification(`Override execution failed: ${err.message}`, "error");
+      showNotification(`Override failed: ${err.message}`, "error");
     } finally {
       setIsSubmitting(false);
     }
@@ -250,12 +355,12 @@ function App() {
   const handleTriggerCheckout = async (planName) => {
     setCheckoutLoading(true);
     try {
-      showNotification(`Redirecting to secure payment sandbox for ${planName}...`, "success");
+      showNotification(`Redirecting to payment for ${planName}...`, "success");
       await new Promise((resolve) => setTimeout(resolve, 1500));
-      showNotification(`Payment successful. Account upgraded to ${planName}!`, "success");
+      showNotification(`Account upgraded to ${planName}.`, "success");
       setShowPaywall(false);
     } catch (err) {
-      showNotification(`Payment Gateway Interrupted: ${err.message}`, "error");
+      showNotification(`Payment failed: ${err.message}`, "error");
     } finally {
       setCheckoutLoading(false);
     }
@@ -269,21 +374,21 @@ function App() {
         body: JSON.stringify({ status: newStatus }),
       });
       if (!response.ok) throw new Error("Failed to update status");
-      showNotification("Ticket status updated successfully.", "success");
+      showNotification(`Status updated to ${newStatus}.`, "success");
       fetchTickets();
-    } catch (error) {
-      showNotification(`Status update failed: ${error.message}`, "error");
+    } catch (err) {
+      showNotification(`Status update failed: ${err.message}`, "error");
     }
   };
 
   const updateResolutionNote = async (ticketId, note) => {
     const { error: updateErr } = await supabase.from("tickets").update({ resolution_note: note }).eq("id", ticketId);
     if (updateErr) {
-      showNotification(`Saving resolution note failed: ${updateErr.message}`, "error");
+      showNotification(`Failed to save note: ${updateErr.message}`, "error");
       return;
     }
     fetchTickets();
-    showNotification("Resolution note saved successfully!", "success");
+    showNotification("Resolution note saved.", "success");
   };
 
   const assignTicket = async (ticketId, assignedAgent) => {
@@ -292,16 +397,20 @@ function App() {
       showNotification(`Assignment failed: ${updateErr.message}`, "error");
       return;
     }
-    showNotification(assignedAgent ? `Ticket assigned to ${assignedAgent}` : "Ticket unassigned", "success");
+    showNotification(assignedAgent ? `Assigned to ${assignedAgent}` : "Unassigned", "success");
     fetchTickets();
   };
 
   const deleteTicket = async (ticketId) => {
-    if (!window.confirm("Permanently delete this ticket? This cannot be undone.")) return;
+    if (!window.confirm("Delete this ticket? This action cannot be undone.")) return;
     try {
       const res = await fetch(`${API_BASE_URL}/tickets/${ticketId}`, { method: "DELETE" });
       if (!res.ok) throw new Error("Delete failed");
       showNotification("Ticket deleted.", "success");
+      if (selectedCommentTicket?.id === ticketId) {
+        setSelectedCommentTicket(null);
+        setComments([]);
+      }
       fetchTickets();
       fetchAnalytics();
     } catch (err) {
@@ -317,37 +426,6 @@ function App() {
 
   const handleLogout = async () => await supabase.auth.signOut();
 
-  const filteredTickets = tickets.filter((ticket) => {
-    const sender = String(ticket.sender || "");
-    const subject = String(ticket.subject || "");
-    const normalizedSearchTerm = searchTerm.toLowerCase();
-    const matchesSearch = sender.toLowerCase().includes(normalizedSearchTerm) || subject.toLowerCase().includes(normalizedSearchTerm);
-    const matchesUrgency = urgencyFilter === "All" || ticket.urgency === urgencyFilter;
-    return matchesSearch && matchesUrgency;
-  });
-
-  const queueFiltered = filteredTickets.filter((ticket) => {
-    if (ticketFilter === "mine") return ticket.assigned_to === "admin@gmail.com";
-    if (ticketFilter === "unassigned") return !ticket.assigned_to;
-    return true;
-  });
-
-  const RESOLVED_STATUSES = ["Resolved", "Closed"];
-  const activeTickets   = queueFiltered.filter((t) => !RESOLVED_STATUSES.includes(t.status));
-  const resolvedTickets = queueFiltered.filter((t) =>  RESOLVED_STATUSES.includes(t.status));
-  const displayedTickets = queueFiltered; // kept for backward compat
-
-  const assignedTickets = tickets.filter((ticket) => ticket.assigned_to).length;
-  const unassignedTickets = tickets.filter((ticket) => !ticket.assigned_to).length;
-
-  const priorityData = [
-    { name: "High", value: tickets.filter((ticket) => ticket.urgency === "High").length },
-    { name: "Medium", value: tickets.filter((ticket) => ticket.urgency === "Medium").length },
-    { name: "Low", value: tickets.filter((ticket) => ticket.urgency === "Low").length },
-  ];
-
-  const CHART_COLORS = ["#ef4444", "#f59e0b", "#10b981"];
-
   const addKnowledge = async () => {
     if (!knowledgeTitle.trim() || !knowledgeContent.trim()) {
       showNotification("Please fill in both fields.", "error");
@@ -359,26 +437,27 @@ function App() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ title: knowledgeTitle, content: knowledgeContent }),
       });
-      if (!response.ok) throw new Error("Failed to create knowledge article");
+      if (!response.ok) throw new Error("Failed to create article");
       setKnowledgeTitle("");
       setKnowledgeContent("");
-      showNotification("Knowledge base article ingested successfully!", "success");
+      showNotification("Article added.", "success");
       fetchKnowledge();
-    } catch (error) {
-      console.error(error);
-      showNotification(error.message, "error");
+    } catch (err) {
+      console.error(err);
+      showNotification(err.message, "error");
     }
   };
 
   const deleteKnowledge = async (id) => {
-    if (!window.confirm("Delete this knowledge article?")) return;
+    if (!window.confirm("Delete this article?")) return;
     try {
       const response = await fetch(`${API_BASE_URL}/knowledge/${id}`, { method: "DELETE" });
       if (!response.ok) throw new Error("Delete failed");
       fetchKnowledge();
-    } catch (error) {
-      console.error(error);
-      alert(error.message);
+      showNotification("Article deleted.", "success");
+    } catch (err) {
+      console.error(err);
+      showNotification(err.message, "error");
     }
   };
 
@@ -387,159 +466,569 @@ function App() {
       const response = await fetch(`${API_BASE_URL}/tickets/${ticketId}/suggest-reply`, { method: "POST" });
       const data = await response.json();
       setAiReply(data.reply || "");
-    } catch (error) {
-      console.error("AI reply generation failed:", error);
+    } catch (err) {
+      console.error("AI reply generation failed:", err);
     }
   };
 
+  /* ── Derived State ── */
+  const selectTicketForDetail = (ticket) => {
+    setSelectedCommentTicket(ticket);
+    loadComments(ticket.id);
+    setAiReply("");
+  };
+
+  const activeDetailTicket = selectedCommentTicket
+    ? tickets.find((t) => t.id === selectedCommentTicket.id) || selectedCommentTicket
+    : null;
+
+  const filteredTickets = tickets.filter((ticket) => {
+    const sender = String(ticket.sender || "");
+    const subject = String(ticket.subject || "");
+    const term = searchTerm.toLowerCase();
+    const matchesSearch = sender.toLowerCase().includes(term) || subject.toLowerCase().includes(term);
+    const matchesUrgency = urgencyFilter === "All" || ticket.urgency === urgencyFilter;
+    return matchesSearch && matchesUrgency;
+  });
+
+  const queueFiltered = filteredTickets.filter((ticket) => {
+    if (ticketFilter === "mine") return ticket.assigned_to === "admin@gmail.com";
+    if (ticketFilter === "unassigned") return !ticket.assigned_to;
+    return true;
+  });
+
+  const RESOLVED_STATUSES = ["Resolved", "Closed"];
+  const activeTickets = queueFiltered.filter((t) => !RESOLVED_STATUSES.includes(t.status));
+  const resolvedTickets = queueFiltered.filter((t) => RESOLVED_STATUSES.includes(t.status));
+  const allDisplayed = [...activeTickets, ...resolvedTickets];
+
+  const assignedTickets = tickets.filter((t) => t.assigned_to).length;
+  const unassignedTickets = tickets.filter((t) => !t.assigned_to).length;
+
+  const priorityData = [
+    { name: "High", value: tickets.filter((t) => t.urgency === "High").length },
+    { name: "Medium", value: tickets.filter((t) => t.urgency === "Medium").length },
+    { name: "Low", value: tickets.filter((t) => t.urgency === "Low").length },
+  ];
+
+  /* ── Loading / Error ── */
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-brand-bg">
-        <Loader2 className="w-5 h-5 text-brand-primary animate-spin" />
+      <div className="h-screen flex items-center justify-center bg-brand-bg">
+        <div className="text-center">
+          <Loader2 className="w-5 h-5 text-brand-text-muted animate-spin mx-auto mb-3" />
+          <p className="text-[13px] text-brand-text-muted">Loading...</p>
+        </div>
       </div>
     );
   }
 
   if (error) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-brand-bg">
-        <div className="bg-brand-surface border border-brand-border rounded-lg p-6 text-center max-w-sm">
-          <AlertCircle className="w-6 h-6 text-brand-danger mx-auto mb-3" />
-          <h2 className="text-sm font-semibold text-brand-text-primary mb-2">Connection Failed</h2>
-          <p className="text-xs text-brand-text-secondary mb-4">{error}</p>
-          <button onClick={() => window.location.reload()} className="px-4 py-2 bg-brand-surface border border-brand-border hover:bg-brand-elevated text-brand-text-primary font-medium text-xs rounded-md transition-colors">
-            Retry Connection
+      <div className="h-screen flex items-center justify-center bg-brand-bg">
+        <div className="text-center max-w-xs">
+          <AlertCircle className="w-8 h-8 text-brand-text-muted mx-auto mb-4" />
+          <h2 className="text-[15px] font-semibold text-brand-text-primary mb-2">Unable to connect</h2>
+          <p className="text-[13px] text-brand-text-secondary mb-5">{error}</p>
+          <button
+            onClick={() => window.location.reload()}
+            className="px-4 py-2 bg-brand-surface border border-brand-border rounded-md text-[13px] font-medium text-brand-text-primary hover:bg-brand-elevated transition-colors"
+          >
+            Retry
           </button>
         </div>
       </div>
     );
   }
 
-  const getStatusBadgeStyles = (status) => {
-    switch (status) {
-      case "Open": return "bg-rose-500/10 text-rose-400 border border-rose-500/20";
-      case "In Progress": return "bg-amber-500/10 text-amber-400 border border-amber-500/20";
-      case "Resolved": return "bg-emerald-500/10 text-emerald-400 border border-emerald-500/20";
-      case "Closed": return "bg-zinc-500/10 text-zinc-400 border border-zinc-500/20";
-      default: return "bg-blue-500/10 text-blue-400 border border-blue-500/20";
-    }
-  };
+  const navItems = [
+    { key: "inbox", label: "Inbox", icon: Inbox },
+    { key: "analytics", label: "Analytics", icon: BarChart3 },
+    { key: "knowledge", label: "Knowledge", icon: BookOpen },
+  ];
 
+  /* ═══════════════════════════════════════════════════════════════
+     RENDER
+     ═══════════════════════════════════════════════════════════════ */
   return (
-    <div className="min-h-screen bg-brand-bg text-brand-text-primary pb-16 font-sans">
-      {/* Global Notifications */}
+    <div className="h-screen flex flex-col bg-brand-bg text-brand-text-primary overflow-hidden">
+
+      {/* ── Toast Notification ── */}
       <AnimatePresence>
         {notification.message && (
-          <motion.div initial={{ opacity: 0, y: -20, x: "-50%" }} animate={{ opacity: 1, y: 0, x: "-50%" }} exit={{ opacity: 0, y: -20, x: "-50%" }} className="fixed top-4 left-1/2 z-50 max-w-sm w-full px-4">
-            <div className={`px-4 py-3 rounded-lg shadow-lg border backdrop-blur-md flex items-start gap-3 ${
-              notification.type === "success" ? "bg-brand-surface border-brand-success/20 text-brand-success" : "bg-brand-surface border-brand-danger/20 text-brand-danger"
+          <motion.div
+            initial={{ opacity: 0, y: -12 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -12 }}
+            transition={{ duration: 0.2 }}
+            className="fixed top-3 left-1/2 -translate-x-1/2 z-[100] max-w-sm w-full px-4"
+          >
+            <div className={`px-4 py-2.5 rounded-lg border flex items-center gap-2.5 text-[13px] font-medium shadow-lg ${
+              notification.type === "success"
+                ? "bg-brand-surface border-brand-success/20 text-brand-success"
+                : "bg-brand-surface border-brand-danger/20 text-brand-danger"
             }`}>
-              {notification.type === "success" ? <CheckCircle className="w-4 h-4 shrink-0" /> : <AlertCircle className="w-4 h-4 shrink-0" />}
-              <p className="flex-1 text-sm font-medium">{notification.message}</p>
+              {notification.type === "success"
+                ? <CheckCircle className="w-4 h-4 shrink-0" />
+                : <AlertCircle className="w-4 h-4 shrink-0" />}
+              <span className="truncate">{notification.message}</span>
             </div>
           </motion.div>
         )}
       </AnimatePresence>
 
-      {/* Header */}
-      <header className="h-14 border-b border-brand-border bg-brand-bg sticky top-0 z-40 flex items-center justify-between px-6">
-        <div className="flex items-center gap-3">
-          <div className="flex items-center justify-center w-6 h-6 rounded bg-brand-surface border border-brand-border">
-            <BrainCircuit className="w-3.5 h-3.5 text-brand-primary" />
+      {/* ── Header ── */}
+      <header className="h-12 border-b border-brand-border bg-brand-bg flex items-center justify-between px-4 shrink-0 z-40">
+        <div className="flex items-center gap-6">
+          <div className="flex items-center gap-2.5">
+            <div className="w-6 h-6 rounded-md bg-brand-primary flex items-center justify-center">
+              <svg viewBox="0 0 16 16" fill="none" className="w-3.5 h-3.5 text-white" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
+                <path d="M2 5h12M2 8h9M2 11h6" />
+              </svg>
+            </div>
+            <span className="text-[14px] font-semibold tracking-tight">HelpdeskAI</span>
           </div>
-          <span className="font-semibold text-sm tracking-tight text-brand-text-primary">
-            AI Operations
-          </span>
-          <span className="hidden sm:flex items-center ml-2 px-2 py-0.5 rounded bg-brand-surface border border-brand-border text-[10px] font-medium text-brand-text-secondary">
-            Admin Mode
-          </span>
+
+          <nav className="flex items-center gap-1">
+            {navItems.map((item) => (
+              <button
+                key={item.key}
+                onClick={() => setActiveView(item.key)}
+                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-[13px] font-medium transition-colors ${
+                  activeView === item.key
+                    ? "bg-brand-surface text-brand-text-primary"
+                    : "text-brand-text-muted hover:text-brand-text-secondary"
+                }`}
+              >
+                <item.icon className="w-3.5 h-3.5" />
+                {item.label}
+              </button>
+            ))}
+          </nav>
         </div>
-        <button onClick={handleLogout} className="flex items-center gap-2 text-xs font-medium text-brand-text-secondary hover:text-brand-text-primary transition-colors cursor-pointer">
+
+        <button
+          onClick={handleLogout}
+          className="flex items-center gap-1.5 text-[13px] text-brand-text-muted hover:text-brand-text-secondary transition-colors"
+        >
           <LogOut className="w-3.5 h-3.5" />
           Sign out
         </button>
       </header>
 
-      <main className="max-w-7xl mx-auto px-6 py-8 space-y-8">
-        
-        {/* KPI Cards */}
-        {analytics && (
-          <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
-            {[
-              { label: "Total Volume", val: analytics.total_tickets },
-              { label: "Critical Escalations", val: analytics.high_priority_tickets, color: "text-brand-danger" },
-              { label: "AI Triage Status", val: analytics.system_status, color: "text-brand-success" },
-              { label: "Assigned Queue", val: assignedTickets },
-              { label: "Unassigned", val: unassignedTickets, color: "text-brand-warning" }
-            ].map((card, idx) => (
-              <div key={idx} className="bg-brand-surface border border-brand-border rounded-lg p-4 shadow-sm flex flex-col justify-between h-[100px]">
-                <h3 className="text-xs font-medium text-brand-text-secondary">{card.label}</h3>
-                <div className={`text-2xl font-semibold tracking-tight ${card.color || 'text-brand-text-primary'}`}>{card.val}</div>
-              </div>
-            ))}
-          </div>
-        )}
+      {/* ── Inbox View ── */}
+      {activeView === "inbox" && (
+        <div className="flex flex-1 overflow-hidden">
 
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-          
-          <div className="lg:col-span-2 space-y-8">
-            {/* Performance Analytics Overview */}
-            {operationsAnalytics && (
-              <div className="bg-brand-surface border border-brand-border rounded-lg p-6 shadow-sm">
-                <div className="flex items-center gap-2 mb-6">
-                  <TrendingUp className="w-4 h-4 text-brand-primary" />
-                  <h2 className="text-sm font-semibold text-brand-text-primary">Performance Analytics</h2>
+          {/* ── Left Panel: Ticket List ── */}
+          <aside className="w-[380px] border-r border-brand-border flex flex-col bg-brand-bg shrink-0">
+
+            {/* Toolbar */}
+            <div className="px-3 py-3 border-b border-brand-border space-y-2.5 shrink-0">
+              <div className="relative">
+                <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-brand-text-muted" />
+                <input
+                  type="text"
+                  placeholder="Search tickets..."
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  className="w-full pl-8 pr-3 py-1.5 bg-brand-surface border border-brand-border rounded-md text-[13px] text-brand-text-primary placeholder:text-brand-text-muted focus:outline-none focus:border-brand-border-strong transition-colors"
+                />
+              </div>
+              <div className="flex items-center gap-2">
+                <div className="flex bg-brand-surface border border-brand-border rounded-md p-0.5 flex-1">
+                  {[
+                    { key: "all", label: "All" },
+                    { key: "mine", label: "Mine" },
+                    { key: "unassigned", label: "Unassigned" },
+                  ].map((tab) => (
+                    <button
+                      key={tab.key}
+                      onClick={() => setTicketFilter(tab.key)}
+                      className={`flex-1 px-2 py-1 rounded text-[12px] font-medium transition-colors ${
+                        ticketFilter === tab.key
+                          ? "bg-brand-elevated text-brand-text-primary"
+                          : "text-brand-text-muted hover:text-brand-text-secondary"
+                      }`}
+                    >
+                      {tab.label}
+                    </button>
+                  ))}
                 </div>
+                <select
+                  value={urgencyFilter}
+                  onChange={(e) => setUrgencyFilter(e.target.value)}
+                  className="bg-brand-surface border border-brand-border rounded-md px-2 py-1 text-[12px] text-brand-text-secondary focus:outline-none"
+                >
+                  <option value="All">Priority</option>
+                  <option value="High">High</option>
+                  <option value="Medium">Medium</option>
+                  <option value="Low">Low</option>
+                </select>
+              </div>
+            </div>
+
+            {/* Ticket rows */}
+            <div className="flex-1 overflow-y-auto">
+              {allDisplayed.length === 0 ? (
+                <div className="flex flex-col items-center justify-center h-full text-center px-6">
+                  <Inbox className="w-8 h-8 text-brand-text-muted mb-3" />
+                  <p className="text-[13px] text-brand-text-muted">No tickets found</p>
+                  <p className="text-[12px] text-brand-text-muted mt-1">Adjust your filters or wait for incoming tickets.</p>
+                </div>
+              ) : (
+                allDisplayed.map((ticket) => {
+                  const isActive = activeDetailTicket?.id === ticket.id;
+                  const isResolved = RESOLVED_STATUSES.includes(ticket.status);
+                  const unread = getUnreadCount(ticket);
+                  return (
+                    <div
+                      key={ticket.id}
+                      onClick={() => selectTicketForDetail(ticket)}
+                      className={`px-3 py-3 border-b border-brand-border cursor-pointer transition-colors ${
+                        isActive
+                          ? "bg-brand-surface"
+                          : "hover:bg-brand-surface/50"
+                      } ${isResolved ? "opacity-50" : ""}`}
+                    >
+                      <div className="flex items-start gap-2.5">
+                        <PriorityIndicator priority={ticket.urgency} />
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center justify-between gap-2 mb-1">
+                            <span className={`text-[13px] font-medium truncate ${isResolved ? "line-through text-brand-text-secondary" : "text-brand-text-primary"}`}>
+                              {ticket.subject}
+                            </span>
+                            <span className="text-[11px] text-brand-text-muted shrink-0">
+                              {timeAgo(ticket.created_at)}
+                            </span>
+                          </div>
+                          <div className="flex items-center justify-between gap-2">
+                            <span className="text-[12px] text-brand-text-muted truncate">
+                              {ticket.sender}
+                            </span>
+                            <div className="flex items-center gap-1.5 shrink-0">
+                              {unread > 0 && (
+                                <span className="w-1.5 h-1.5 rounded-full bg-brand-primary" />
+                              )}
+                              <StatusBadge status={ticket.status} />
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })
+              )}
+            </div>
+
+            {/* List footer */}
+            <div className="px-3 py-2 border-t border-brand-border text-[11px] text-brand-text-muted shrink-0">
+              {allDisplayed.length} ticket{allDisplayed.length !== 1 ? "s" : ""}
+            </div>
+          </aside>
+
+          {/* ── Right Panel: Ticket Detail ── */}
+          <main className="flex-1 flex flex-col overflow-hidden bg-brand-bg">
+            {activeDetailTicket ? (
+              <>
+                {/* Detail Header */}
+                <div className="px-6 py-4 border-b border-brand-border shrink-0">
+                  <div className="flex items-start justify-between gap-4">
+                    <div className="min-w-0">
+                      <h2 className="text-[16px] font-semibold text-brand-text-primary leading-snug mb-2">
+                        {activeDetailTicket.subject}
+                      </h2>
+                      <div className="flex items-center gap-2.5 flex-wrap">
+                        <span className="text-[12px] text-brand-text-muted flex items-center gap-1">
+                          <Hash className="w-3 h-3" />{activeDetailTicket.id}
+                        </span>
+                        <StatusBadge status={activeDetailTicket.status} />
+                        <span className="flex items-center gap-1.5">
+                          <PriorityIndicator priority={activeDetailTicket.urgency} />
+                          <PriorityBadge priority={activeDetailTicket.urgency} />
+                        </span>
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-2 shrink-0">
+                      <select
+                        value={activeDetailTicket.status || "Open"}
+                        onChange={(e) => updateStatus(activeDetailTicket.id, e.target.value)}
+                        className="bg-brand-surface border border-brand-border rounded-md px-2.5 py-1.5 text-[12px] text-brand-text-primary focus:outline-none"
+                      >
+                        <option value="Open">Open</option>
+                        <option value="In Progress">In Progress</option>
+                        <option value="Resolved">Resolved</option>
+                        <option value="Closed">Closed</option>
+                      </select>
+                      <select
+                        value={activeDetailTicket.assigned_to || ""}
+                        onChange={(e) => assignTicket(activeDetailTicket.id, e.target.value)}
+                        className="bg-brand-surface border border-brand-border rounded-md px-2.5 py-1.5 text-[12px] text-brand-text-primary focus:outline-none"
+                      >
+                        <option value="">Unassigned</option>
+                        <option value="admin@gmail.com">admin@gmail.com</option>
+                      </select>
+                      <button
+                        onClick={() => openOverrideModal(activeDetailTicket)}
+                        className="px-2.5 py-1.5 bg-brand-surface border border-brand-border rounded-md text-[12px] font-medium text-brand-text-primary hover:bg-brand-elevated transition-colors"
+                      >
+                        Override
+                      </button>
+                      <button
+                        onClick={() => deleteTicket(activeDetailTicket.id)}
+                        className="p-1.5 text-brand-text-muted hover:text-brand-danger rounded-md hover:bg-brand-surface transition-colors"
+                        title="Delete ticket"
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </button>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Detail Body */}
+                <div className="flex-1 overflow-y-auto">
+                  <div className="px-6 py-5 space-y-6 max-w-3xl">
+
+                    {/* Metadata */}
+                    <section>
+                      <SectionLabel>Details</SectionLabel>
+                      <div className="grid grid-cols-2 gap-x-6 border border-brand-border rounded-lg p-4 bg-brand-surface">
+                        <MetaRow icon={Mail} label="Customer">{activeDetailTicket.sender}</MetaRow>
+                        <MetaRow icon={Building2} label="Department">{activeDetailTicket.department || "—"}</MetaRow>
+                        <MetaRow icon={User} label="Assignee">{activeDetailTicket.assigned_to || "Unassigned"}</MetaRow>
+                        <MetaRow icon={Calendar} label="Created">{formatDate(activeDetailTicket.created_at)}</MetaRow>
+                        <MetaRow icon={Tag} label="Sentiment">{activeDetailTicket.sentiment || "—"}</MetaRow>
+                        <MetaRow icon={Activity} label="Pipeline Stage">{activeDetailTicket.workflow_stage || "Queued"}</MetaRow>
+                      </div>
+                    </section>
+
+                    {/* Description */}
+                    <section>
+                      <SectionLabel>Customer Message</SectionLabel>
+                      <div className="text-[13px] text-brand-text-secondary leading-relaxed whitespace-pre-wrap bg-brand-surface border border-brand-border rounded-lg p-4">
+                        {activeDetailTicket.description || "No description provided."}
+                      </div>
+                    </section>
+
+                    {/* AI Analysis */}
+                    {activeDetailTicket.action_taken && (
+                      <section>
+                        <SectionLabel>AI Analysis</SectionLabel>
+                        <div className="bg-brand-surface border border-brand-border rounded-lg p-4">
+                          <div className="flex items-start gap-3">
+                            <div className="w-7 h-7 rounded-md bg-brand-primary/10 flex items-center justify-center shrink-0 mt-0.5">
+                              <Sparkles className="w-3.5 h-3.5 text-brand-primary" />
+                            </div>
+                            <div className="flex-1 min-w-0">
+                              <div className="text-[11px] font-medium text-brand-text-muted uppercase tracking-wide mb-1.5">Recommended Action</div>
+                              <div className="text-[13px] text-brand-text-secondary leading-relaxed whitespace-pre-wrap">
+                                {activeDetailTicket.action_taken}
+                              </div>
+                            </div>
+                          </div>
+                          {activeDetailTicket.summary && activeDetailTicket.summary !== "Queued" && (
+                            <div className="mt-4 pt-4 border-t border-brand-border">
+                              <div className="text-[11px] font-medium text-brand-text-muted uppercase tracking-wide mb-1.5">Summary</div>
+                              <div className="text-[13px] text-brand-text-secondary leading-relaxed">
+                                {activeDetailTicket.summary}
+                              </div>
+                            </div>
+                          )}
+                          {activeDetailTicket.resolution_note && (
+                            <div className="mt-4 pt-4 border-t border-brand-border">
+                              <div className="text-[11px] font-medium text-brand-text-muted uppercase tracking-wide mb-1.5">Resolution Note</div>
+                              <div className="text-[13px] text-brand-text-secondary leading-relaxed">
+                                {activeDetailTicket.resolution_note}
+                              </div>
+                            </div>
+                          )}
+                        </div>
+                      </section>
+                    )}
+
+                    {/* Discussion Thread */}
+                    <section>
+                      <SectionLabel>
+                        Discussion {comments.length > 0 && `(${comments.length})`}
+                      </SectionLabel>
+                      <div className="space-y-4">
+                        {comments.length === 0 ? (
+                          <div className="text-[13px] text-brand-text-muted py-6 text-center bg-brand-surface border border-brand-border rounded-lg">
+                            No messages yet. Start the conversation below.
+                          </div>
+                        ) : (
+                          comments.map((comment) => (
+                            <div key={comment.id} className="flex gap-3">
+                              <div className={`w-7 h-7 rounded-full flex items-center justify-center shrink-0 ${
+                                comment.sender === "admin@gmail.com"
+                                  ? "bg-brand-primary/10"
+                                  : "bg-brand-surface border border-brand-border"
+                              }`}>
+                                {comment.sender === "admin@gmail.com"
+                                  ? <User className="w-3.5 h-3.5 text-brand-primary" />
+                                  : <User className="w-3.5 h-3.5 text-brand-text-muted" />}
+                              </div>
+                              <div className="flex-1 min-w-0">
+                                <div className="flex items-center gap-2 mb-1">
+                                  <span className="text-[13px] font-medium text-brand-text-primary">{comment.sender}</span>
+                                  <span className="text-[11px] text-brand-text-muted">
+                                    {comment.created_at ? new Date(comment.created_at).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }) : ""}
+                                  </span>
+                                </div>
+                                <div className="text-[13px] text-brand-text-secondary leading-relaxed">
+                                  {comment.message}
+                                </div>
+                              </div>
+                            </div>
+                          ))
+                        )}
+                      </div>
+                    </section>
+                  </div>
+                </div>
+
+                {/* Comment Composer */}
+                <div className="px-6 py-3 border-t border-brand-border shrink-0 bg-brand-surface">
+                  <AnimatePresence>
+                    {aiReply && (
+                      <motion.div
+                        initial={{ opacity: 0, height: 0 }}
+                        animate={{ opacity: 1, height: "auto" }}
+                        exit={{ opacity: 0, height: 0 }}
+                        className="overflow-hidden mb-3"
+                      >
+                        <div className="p-3 bg-brand-primary/5 border border-brand-primary/15 rounded-lg">
+                          <div className="text-[12px] text-brand-text-secondary mb-2 whitespace-pre-wrap">{aiReply}</div>
+                          <button
+                            onClick={() => setNewComment(aiReply)}
+                            className="text-[12px] font-medium text-brand-primary hover:underline"
+                          >
+                            Use this suggestion
+                          </button>
+                        </div>
+                      </motion.div>
+                    )}
+                  </AnimatePresence>
+                  <div className="flex items-end gap-2">
+                    <button
+                      onClick={() => generateAiReply(activeDetailTicket.id)}
+                      className="shrink-0 p-2 text-brand-text-muted hover:text-brand-primary hover:bg-brand-primary/10 rounded-md transition-colors"
+                      title="Generate AI reply suggestion"
+                    >
+                      <BrainCircuit className="w-4 h-4" />
+                    </button>
+                    <textarea
+                      value={newComment}
+                      onChange={(e) => setNewComment(e.target.value)}
+                      placeholder="Write a reply..."
+                      rows={1}
+                      className="flex-1 bg-brand-bg border border-brand-border rounded-lg px-3 py-2 text-[13px] text-brand-text-primary placeholder:text-brand-text-muted focus:outline-none focus:border-brand-border-strong resize-none min-h-[40px] max-h-[120px]"
+                      onKeyDown={(e) => {
+                        if (e.key === "Enter" && !e.shiftKey) {
+                          e.preventDefault();
+                          sendAdminComment();
+                        }
+                      }}
+                    />
+                    <button
+                      onClick={sendAdminComment}
+                      disabled={!newComment.trim()}
+                      className="shrink-0 p-2 bg-brand-primary text-white rounded-lg disabled:opacity-30 transition-colors hover:bg-brand-primary/90"
+                    >
+                      <Send className="w-4 h-4" />
+                    </button>
+                  </div>
+                </div>
+              </>
+            ) : (
+              /* Empty Detail State */
+              <div className="flex-1 flex flex-col items-center justify-center text-center px-8">
+                <div className="w-12 h-12 rounded-xl bg-brand-surface border border-brand-border flex items-center justify-center mb-4">
+                  <Inbox className="w-5 h-5 text-brand-text-muted" />
+                </div>
+                <h3 className="text-[15px] font-semibold text-brand-text-primary mb-1">Select a ticket</h3>
+                <p className="text-[13px] text-brand-text-muted max-w-xs">
+                  Choose a ticket from the list to view its details, AI analysis, and discussion thread.
+                </p>
+              </div>
+            )}
+          </main>
+        </div>
+      )}
+
+      {/* ── Analytics View ── */}
+      {activeView === "analytics" && (
+        <div className="flex-1 overflow-y-auto">
+          <div className="max-w-5xl mx-auto px-6 py-8 space-y-6">
+
+            {/* KPI Cards */}
+            {analytics && (
+              <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
+                {[
+                  { label: "Total Tickets", val: analytics.total_tickets },
+                  { label: "High Priority", val: analytics.high_priority_tickets, color: "text-brand-danger" },
+                  { label: "System Status", val: analytics.system_status, color: "text-brand-success" },
+                  { label: "Assigned", val: assignedTickets },
+                  { label: "Unassigned", val: unassignedTickets, color: "text-brand-warning" },
+                ].map((card, i) => (
+                  <div key={i} className="bg-brand-surface border border-brand-border rounded-lg p-4">
+                    <div className="text-[11px] font-medium text-brand-text-muted uppercase tracking-wide mb-2">{card.label}</div>
+                    <div className={`text-xl font-semibold ${card.color || "text-brand-text-primary"}`}>{card.val}</div>
+                  </div>
+                ))}
+              </div>
+            )}
+
+            {/* Operations Metrics */}
+            {operationsAnalytics && (
+              <div className="bg-brand-surface border border-brand-border rounded-lg p-5">
+                <h2 className="text-[13px] font-semibold text-brand-text-primary mb-4 flex items-center gap-2">
+                  <TrendingUp className="w-4 h-4 text-brand-text-muted" />
+                  Performance Overview
+                </h2>
                 <div className="grid grid-cols-2 sm:grid-cols-4 gap-6">
                   {[
                     { label: "Avg Resolution", val: `${operationsAnalytics.avg_resolution_hours}h` },
                     { label: "Top Department", val: operationsAnalytics.top_department },
-                    { label: "Common Urgency", val: operationsAnalytics.most_common_urgency },
-                    { label: "Resolved Today", val: operationsAnalytics.resolved_today }
+                    { label: "Common Priority", val: operationsAnalytics.most_common_urgency },
+                    { label: "Resolved Today", val: operationsAnalytics.resolved_today },
                   ].map((stat, i) => (
                     <div key={i}>
-                      <div className="text-[10px] font-medium text-brand-text-secondary uppercase tracking-wide mb-1">{stat.label}</div>
-                      <div className="text-sm font-semibold text-brand-text-primary truncate" title={stat.val}>{stat.val}</div>
+                      <div className="text-[11px] text-brand-text-muted uppercase tracking-wide mb-1">{stat.label}</div>
+                      <div className="text-[14px] font-semibold text-brand-text-primary">{stat.val}</div>
                     </div>
                   ))}
                 </div>
               </div>
             )}
 
-             {/* Charts */}
-             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div className="bg-brand-surface border border-brand-border rounded-lg p-5 shadow-sm h-[280px] flex flex-col">
-                <h3 className="text-xs font-semibold text-brand-text-primary mb-4 flex items-center gap-2">
-                  <BarChart3 className="w-3.5 h-3.5 text-brand-text-secondary" />
-                  Priority Distribution
-                </h3>
+            {/* Charts */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="bg-brand-surface border border-brand-border rounded-lg p-5 h-[300px] flex flex-col">
+                <h3 className="text-[13px] font-semibold text-brand-text-primary mb-4">Priority Distribution</h3>
                 <div className="flex-1 min-h-0">
                   <ResponsiveContainer width="100%" height="100%">
                     <PieChart>
-                      <Pie data={priorityData} cx="50%" cy="50%" innerRadius={50} outerRadius={70} paddingAngle={2} dataKey="value" stroke="none">
-                        {priorityData.map((entry, index) => <Cell key={`cell-${index}`} fill={CHART_COLORS[index]} />)}
+                      <Pie data={priorityData} cx="50%" cy="50%" innerRadius={50} outerRadius={75} paddingAngle={2} dataKey="value" stroke="none">
+                        {priorityData.map((_, i) => <Cell key={i} fill={CHART_COLORS[i]} />)}
                       </Pie>
-                      <Tooltip contentStyle={{ background: "#18181b", border: "1px solid #3f3f46", borderRadius: "6px", fontSize: "11px", color: "#fafafa" }} itemStyle={{color: '#fafafa'}} />
-                      <Legend verticalAlign="bottom" height={24} iconType="circle" wrapperStyle={{ fontSize: "10px", color: "#a1a1aa" }} />
+                      <Tooltip contentStyle={{ background: "#18181b", border: "1px solid #27272a", borderRadius: "6px", fontSize: "12px", color: "#fafafa" }} itemStyle={{ color: "#fafafa" }} />
+                      <Legend verticalAlign="bottom" height={28} iconType="circle" wrapperStyle={{ fontSize: "11px", color: "#a1a1aa" }} />
                     </PieChart>
                   </ResponsiveContainer>
                 </div>
               </div>
-
-              <div className="bg-brand-surface border border-brand-border rounded-lg p-5 shadow-sm h-[280px] flex flex-col">
-                <h3 className="text-xs font-semibold text-brand-text-primary mb-4 flex items-center gap-2">
-                  <Activity className="w-3.5 h-3.5 text-brand-text-secondary" />
-                  Volume by Priority
-                </h3>
+              <div className="bg-brand-surface border border-brand-border rounded-lg p-5 h-[300px] flex flex-col">
+                <h3 className="text-[13px] font-semibold text-brand-text-primary mb-4">Volume by Priority</h3>
                 <div className="flex-1 min-h-0">
                   <ResponsiveContainer width="100%" height="100%">
                     <BarChart data={priorityData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
                       <CartesianGrid strokeDasharray="3 3" stroke="#27272a" vertical={false} />
-                      <XAxis dataKey="name" stroke="#a1a1aa" fontSize={10} axisLine={false} tickLine={false} />
-                      <YAxis stroke="#a1a1aa" fontSize={10} axisLine={false} tickLine={false} />
-                      <Tooltip cursor={{fill: '#27272a', opacity: 0.4}} contentStyle={{ background: "#18181b", border: "1px solid #3f3f46", borderRadius: "6px", fontSize: "11px", color: "#fafafa" }} />
-                      <Bar dataKey="value" radius={[2, 2, 0, 0]}>
-                        {priorityData.map((entry, index) => <Cell key={`cell-${index}`} fill={CHART_COLORS[index]} />)}
+                      <XAxis dataKey="name" stroke="#71717a" fontSize={11} axisLine={false} tickLine={false} />
+                      <YAxis stroke="#71717a" fontSize={11} axisLine={false} tickLine={false} />
+                      <Tooltip cursor={{ fill: "#27272a", opacity: 0.4 }} contentStyle={{ background: "#18181b", border: "1px solid #27272a", borderRadius: "6px", fontSize: "12px", color: "#fafafa" }} />
+                      <Bar dataKey="value" radius={[3, 3, 0, 0]}>
+                        {priorityData.map((_, i) => <Cell key={i} fill={CHART_COLORS[i]} />)}
                       </Bar>
                     </BarChart>
                   </ResponsiveContainer>
@@ -547,429 +1036,284 @@ function App() {
               </div>
             </div>
 
-            {/* Active Ticket Queue */}
-            <div className="bg-brand-surface border border-brand-border rounded-lg shadow-sm overflow-hidden flex flex-col">
-              <div className="p-4 border-b border-brand-border flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 bg-brand-surface">
-                <div className="flex items-center gap-2">
-                  <Layers className="w-4 h-4 text-brand-text-secondary" />
-                  <h2 className="text-sm font-semibold text-brand-text-primary">Ticket Queue</h2>
-                </div>
-                
-                <div className="flex flex-wrap items-center gap-3 w-full sm:w-auto">
-                  <div className="flex bg-brand-bg border border-brand-border rounded p-0.5">
-                    {[
-                      { key: "all", label: "All" },
-                      { key: "mine", label: "My Desk" },
-                      { key: "unassigned", label: "Unassigned" }
-                    ].map((tab) => (
-                      <button
-                        key={tab.key}
-                        onClick={() => setTicketFilter(tab.key)}
-                        className={`px-2.5 py-1 rounded-sm text-[10px] font-medium transition-colors ${ticketFilter === tab.key ? "bg-brand-surface text-brand-text-primary shadow-sm" : "text-brand-text-secondary hover:text-brand-text-primary"}`}
-                      >
-                        {tab.label}
-                      </button>
-                    ))}
-                  </div>
-
-                  <div className="relative flex-1 sm:w-48">
-                    <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-brand-text-secondary" />
-                    <input
-                      type="text"
-                      placeholder="Search tickets..."
-                      value={searchTerm}
-                      onChange={(e) => setSearchTerm(e.target.value)}
-                      className="w-full pl-8 pr-3 py-1.5 bg-brand-bg border border-brand-border rounded text-xs text-brand-text-primary placeholder:text-brand-text-secondary focus:outline-none focus:border-brand-primary"
-                    />
-                  </div>
-
-                  <select
-                    value={urgencyFilter}
-                    onChange={(e) => setUrgencyFilter(e.target.value)}
-                    className="bg-brand-bg border border-brand-border rounded px-2 py-1.5 text-xs text-brand-text-primary focus:outline-none"
-                  >
-                    <option value="All">All Priority</option>
-                    <option value="High">High</option>
-                    <option value="Medium">Medium</option>
-                    <option value="Low">Low</option>
-                  </select>
-                </div>
+            {/* Activity Feed */}
+            <div className="bg-brand-surface border border-brand-border rounded-lg">
+              <div className="px-5 py-3 border-b border-brand-border flex items-center gap-2">
+                <Activity className="w-4 h-4 text-brand-text-muted" />
+                <h3 className="text-[13px] font-semibold text-brand-text-primary">Recent Activity</h3>
               </div>
-
-              <div className="overflow-x-auto min-h-[300px]">
-                <table className="w-full text-left text-xs whitespace-nowrap">
-                  <thead>
-                    <tr className="border-b border-brand-border bg-brand-bg text-[10px] font-medium text-brand-text-secondary">
-                      <th className="px-4 py-2.5 font-medium">Issue</th>
-                      <th className="px-4 py-2.5 font-medium">Status & Priority</th>
-                      <th className="px-4 py-2.5 font-medium">AI Triage</th>
-                      <th className="px-4 py-2.5 font-medium">Assignment</th>
-                      <th className="px-4 py-2.5 font-medium text-right">Actions</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-brand-border">
-                    {/* ── Active tickets ── */}
-                    {activeTickets.length === 0 && resolvedTickets.length === 0 ? (
-                      <tr>
-                        <td colSpan="5" className="px-4 py-12 text-center text-brand-text-secondary">
-                          No tickets match your current filters.
-                        </td>
-                      </tr>
-                    ) : activeTickets.length === 0 ? (
-                      <tr>
-                        <td colSpan="5" className="px-4 py-8 text-center text-brand-text-secondary text-xs">
-                          All tickets resolved — queue clear.
-                        </td>
-                      </tr>
-                    ) : (
-                      activeTickets.map((ticket) => (
-                        <tr key={ticket.id} className="hover:bg-brand-bg/50 transition-colors group">
-                          <td className="px-4 py-3">
-                            <div className="font-medium text-brand-text-primary max-w-[200px] truncate mb-0.5 flex items-center gap-2">
-                              {ticket.subject}
-                              {getUnreadCount(ticket) > 0 && <span className="w-1.5 h-1.5 rounded-full bg-brand-primary shrink-0"/>}
-                            </div>
-                            <div className="text-[10px] text-brand-text-secondary truncate max-w-[200px]">{ticket.sender}</div>
-                          </td>
-                          <td className="px-4 py-3">
-                            <div className="flex flex-col gap-1.5 items-start">
-                              <span className={`px-1.5 py-0.5 rounded text-[9px] font-medium ${getStatusBadgeStyles(ticket.status)}`}>
-                                {ticket.status || "Open"}
-                              </span>
-                              <span className={`px-1.5 py-0.5 rounded text-[9px] font-medium ${ticket.urgency === "High" ? "bg-brand-danger/10 text-brand-danger" : ticket.urgency === "Medium" ? "bg-brand-warning/10 text-brand-warning" : "bg-brand-success/10 text-brand-success"}`}>
-                                {ticket.urgency || "Low"}
-                              </span>
-                            </div>
-                          </td>
-                          <td className="px-4 py-3">
-                            <div className="flex items-center gap-1.5">
-                              <span className="text-[10px] text-brand-text-primary font-medium">{ticket.department}</span>
-                              {ticket.workflow_stage && (
-                                <span className={`px-1 py-0.2 rounded text-[8px] font-mono border ${
-                                  ticket.workflow_stage === "Queued" ? "bg-zinc-500/10 text-zinc-400 border-zinc-500/20" :
-                                  ticket.workflow_stage === "Knowledge Matched" ? "bg-blue-500/10 text-blue-400 border-blue-500/20" :
-                                  ticket.workflow_stage === "LLM Drafting Complete" ? "bg-purple-500/10 text-purple-400 border-purple-500/20" :
-                                  "bg-emerald-500/10 text-emerald-400 border-emerald-500/20"
-                                }`}>
-                                  {ticket.workflow_stage}
-                                </span>
-                              )}
-                            </div>
-                            <div className="text-[10px] text-brand-text-secondary mt-0.5 max-w-[150px] truncate" title={ticket.action_taken}>
-                              {ticket.action_taken || "Awaiting triage"}
-                            </div>
-                          </td>
-                          <td className="px-4 py-3">
-                            <select
-                              value={ticket.assigned_to || ""}
-                              onChange={(e) => assignTicket(ticket.id, e.target.value)}
-                              className="bg-brand-bg border border-brand-border rounded px-2 py-1 text-[10px] text-brand-text-primary focus:outline-none w-[120px]"
-                            >
-                              <option value="">Unassigned</option>
-                              <option value="admin@gmail.com">admin@gmail.com</option>
-                            </select>
-                            <div className="mt-1.5">
-                               <select
-                                  value={ticket.status || "Open"}
-                                  onChange={(e) => updateStatus(ticket.id, e.target.value)}
-                                  className="bg-brand-bg border border-transparent hover:border-brand-border rounded px-1 text-[10px] text-brand-text-secondary focus:outline-none w-[120px] transition-colors"
-                                >
-                                  <option value="Open">Set Open</option>
-                                  <option value="In Progress">Set In Progress</option>
-                                  <option value="Resolved">Set Resolved</option>
-                                  <option value="Closed">Set Closed</option>
-                                </select>
-                            </div>
-                          </td>
-                          <td className="px-4 py-3 text-right">
-                             <div className="flex items-center justify-end gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                                <button
-                                  onClick={() => openOverrideModal(ticket)}
-                                  className="px-2 py-1 bg-brand-surface border border-brand-border hover:bg-brand-elevated text-brand-text-primary text-[10px] font-medium rounded transition-colors"
-                                >
-                                  Override
-                                </button>
-                                <button
-                                  onClick={() => { setSelectedCommentTicket(ticket); loadComments(ticket.id); setAiReply(""); }}
-                                  className="px-2 py-1 bg-brand-primary/10 text-brand-primary hover:bg-brand-primary hover:text-white text-[10px] font-medium rounded transition-colors"
-                                >
-                                  Discuss
-                                </button>
-                                <button
-                                  onClick={() => deleteTicket(ticket.id)}
-                                  className="px-2 py-1 bg-brand-danger/10 text-brand-danger hover:bg-brand-danger hover:text-white text-[10px] font-medium rounded transition-colors"
-                                  title="Delete ticket"
-                                >
-                                  <Trash2 className="w-3 h-3" />
-                                </button>
-                             </div>
-                          </td>
-                        </tr>
-                      ))
-                    )}
-
-                    {/* ── Resolved / Closed section ── */}
-                    {resolvedTickets.length > 0 && (
-                      <>
-                        <tr>
-                          <td colSpan="5" className="px-4 py-2 bg-brand-bg/60 border-t-2 border-brand-border/60">
-                            <div className="flex items-center gap-2 text-[10px] font-semibold uppercase tracking-widest text-brand-text-muted">
-                              <CheckCircle className="w-3 h-3 text-brand-success" />
-                              Resolved &amp; Closed ({resolvedTickets.length})
-                            </div>
-                          </td>
-                        </tr>
-                        {resolvedTickets.map((ticket) => (
-                          <tr key={ticket.id} className="opacity-50 hover:opacity-80 transition-opacity group">
-                            <td className="px-4 py-2.5">
-                              <div className="font-medium text-brand-text-secondary max-w-[200px] truncate mb-0.5 text-xs line-through">
-                                {ticket.subject}
-                              </div>
-                              <div className="text-[10px] text-brand-text-muted truncate max-w-[200px]">{ticket.sender}</div>
-                            </td>
-                            <td className="px-4 py-2.5">
-                              <span className={`px-1.5 py-0.5 rounded text-[9px] font-medium ${getStatusBadgeStyles(ticket.status)}`}>
-                                {ticket.status}
-                              </span>
-                            </td>
-                            <td className="px-4 py-2.5">
-                              <div className="text-[10px] text-brand-text-muted">{ticket.department}</div>
-                            </td>
-                            <td className="px-4 py-2.5">
-                              <div className="text-[10px] text-brand-text-muted">{ticket.assigned_to || "—"}</div>
-                            </td>
-                            <td className="px-4 py-2.5 text-right">
-                              <div className="flex items-center justify-end gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                                <button
-                                  onClick={() => { setSelectedCommentTicket(ticket); loadComments(ticket.id); setAiReply(""); }}
-                                  className="px-2 py-1 bg-brand-primary/10 text-brand-primary hover:bg-brand-primary hover:text-white text-[10px] font-medium rounded transition-colors"
-                                >
-                                  View
-                                </button>
-                                <button
-                                  onClick={() => deleteTicket(ticket.id)}
-                                  className="px-2 py-1 bg-brand-danger/10 text-brand-danger hover:bg-brand-danger hover:text-white text-[10px] font-medium rounded transition-colors"
-                                  title="Delete ticket"
-                                >
-                                  <Trash2 className="w-3 h-3" />
-                                </button>
-                              </div>
-                            </td>
-                          </tr>
-                        ))}
-                      </>
-                    )}
-                  </tbody>
-                </table>
-              </div>
-            </div>
-          </div>
-
-          <div className="space-y-6">
-            {/* Realtime Event Feed */}
-            {activityFeed.length > 0 && (
-              <div className="bg-brand-surface border border-brand-border rounded-lg shadow-sm flex flex-col max-h-[300px]">
-                <div className="p-4 border-b border-brand-border flex justify-between items-center bg-brand-bg rounded-t-lg">
-                  <h3 className="text-xs font-semibold text-brand-text-primary flex items-center gap-2">
-                    <div className="w-1.5 h-1.5 rounded-full bg-brand-success"></div>
-                    Event Stream
-                  </h3>
-                </div>
-                <div className="overflow-y-auto p-2 space-y-1">
-                  {activityFeed.map((item, index) => (
-                    <div key={index} className="flex items-center gap-3 px-3 py-2 rounded hover:bg-brand-bg text-[10px] font-mono transition-colors">
-                       <span className="text-brand-text-secondary shrink-0">{item.time}</span>
-                       <span className="text-brand-primary shrink-0 uppercase">{item.event}</span>
-                       <span className="text-brand-text-secondary truncate">ID: {item.ticketId}</span>
+              <div className="p-2 max-h-[280px] overflow-y-auto">
+                {activityFeed.length === 0 ? (
+                  <div className="text-[13px] text-brand-text-muted text-center py-8">No recent activity.</div>
+                ) : (
+                  activityFeed.map((item, i) => (
+                    <div key={i} className="flex items-center gap-3 px-3 py-2 rounded-md hover:bg-brand-bg text-[12px] transition-colors">
+                      <span className="text-brand-text-muted font-mono shrink-0">{item.time}</span>
+                      <span className="text-brand-primary font-medium uppercase text-[11px] shrink-0">{item.event}</span>
+                      <span className="text-brand-text-muted">Ticket #{item.ticketId}</span>
                     </div>
-                  ))}
-                </div>
+                  ))
+                )}
               </div>
-            )}
-
-            {/* Knowledge Base Ingestion */}
-            <div className="bg-brand-surface border border-brand-border rounded-lg shadow-sm">
-              <div className="p-4 border-b border-brand-border bg-brand-bg rounded-t-lg">
-                <h3 className="text-xs font-semibold text-brand-text-primary flex items-center gap-2">
-                  <BookOpen className="w-3.5 h-3.5 text-brand-text-secondary" />
-                  Knowledge Base Sync
-                </h3>
-              </div>
-              <div className="p-4 space-y-3">
-                <input
-                  type="text"
-                  placeholder="Article Title"
-                  value={knowledgeTitle}
-                  onChange={(e) => setKnowledgeTitle(e.target.value)}
-                  className="w-full px-3 py-2 bg-brand-bg border border-brand-border rounded-md text-xs text-brand-text-primary placeholder:text-brand-text-secondary focus:outline-none focus:border-brand-primary"
-                />
-                <textarea
-                  placeholder="Context data for AI..."
-                  value={knowledgeContent}
-                  onChange={(e) => setKnowledgeContent(e.target.value)}
-                  rows={3}
-                  className="w-full px-3 py-2 bg-brand-bg border border-brand-border rounded-md text-xs text-brand-text-primary placeholder:text-brand-text-secondary focus:outline-none focus:border-brand-primary resize-none"
-                />
-                <button
-                  onClick={addKnowledge}
-                  className="w-full py-2 bg-brand-surface border border-brand-border hover:bg-brand-elevated text-brand-text-primary text-xs font-medium rounded-md transition-colors"
-                >
-                  Ingest Context
-                </button>
-              </div>
-
-              {knowledge.length > 0 && (
-                <div className="border-t border-brand-border p-2 max-h-[200px] overflow-y-auto">
-                   {knowledge.map((item) => (
-                      <div key={item.id} className="p-3 hover:bg-brand-bg rounded-md group flex items-start justify-between gap-3 transition-colors">
-                        <div className="min-w-0">
-                          <h4 className="text-[11px] font-medium text-brand-text-primary truncate">{item.title}</h4>
-                          <p className="text-[10px] text-brand-text-secondary truncate mt-0.5">{item.content}</p>
-                        </div>
-                        <button onClick={() => deleteKnowledge(item.id)} className="p-1 text-brand-text-secondary hover:text-brand-danger opacity-0 group-hover:opacity-100 transition-opacity">
-                          <Trash2 className="w-3.5 h-3.5" />
-                        </button>
-                      </div>
-                   ))}
-                </div>
-              )}
             </div>
           </div>
         </div>
-      </main>
+      )}
 
-      {/* Discussion Modal */}
-      <AnimatePresence>
-        {selectedCommentTicket && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-6">
-            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="absolute inset-0 bg-brand-bg/80 backdrop-blur-sm" onClick={() => setSelectedCommentTicket(null)} />
-            <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.95 }} className="relative w-full max-w-2xl bg-brand-surface border border-brand-border rounded-xl shadow-2xl flex flex-col max-h-[85vh]">
-              <div className="p-4 border-b border-brand-border flex items-center justify-between shrink-0">
-                 <div>
-                   <h2 className="text-sm font-semibold text-brand-text-primary">Thread: {selectedCommentTicket.subject}</h2>
-                   <p className="text-[10px] text-brand-text-secondary">#{selectedCommentTicket.id} &middot; {selectedCommentTicket.sender}</p>
-                 </div>
-                 <button onClick={() => setSelectedCommentTicket(null)} className="p-1.5 text-brand-text-secondary hover:text-brand-text-primary rounded"><X className="w-4 h-4"/></button>
+      {/* ── Knowledge View ── */}
+      {activeView === "knowledge" && (
+        <div className="flex-1 overflow-y-auto">
+          <div className="max-w-2xl mx-auto px-6 py-8 space-y-6">
+            <div>
+              <h1 className="text-[18px] font-semibold text-brand-text-primary mb-1">Knowledge Base</h1>
+              <p className="text-[13px] text-brand-text-muted">
+                Add articles that the AI uses as context when triaging tickets.
+              </p>
+            </div>
+
+            {/* Add Article Form */}
+            <div className="bg-brand-surface border border-brand-border rounded-lg p-5 space-y-3">
+              <input
+                type="text"
+                placeholder="Article title"
+                value={knowledgeTitle}
+                onChange={(e) => setKnowledgeTitle(e.target.value)}
+                className="w-full px-3 py-2 bg-brand-bg border border-brand-border rounded-md text-[13px] text-brand-text-primary placeholder:text-brand-text-muted focus:outline-none focus:border-brand-border-strong"
+              />
+              <textarea
+                placeholder="Article content..."
+                value={knowledgeContent}
+                onChange={(e) => setKnowledgeContent(e.target.value)}
+                rows={4}
+                className="w-full px-3 py-2 bg-brand-bg border border-brand-border rounded-md text-[13px] text-brand-text-primary placeholder:text-brand-text-muted focus:outline-none focus:border-brand-border-strong resize-none"
+              />
+              <button
+                onClick={addKnowledge}
+                className="flex items-center gap-2 px-4 py-2 bg-brand-primary text-white text-[13px] font-medium rounded-md hover:bg-brand-primary/90 transition-colors"
+              >
+                <Plus className="w-3.5 h-3.5" />
+                Add Article
+              </button>
+            </div>
+
+            {/* Articles List */}
+            {knowledge.length === 0 ? (
+              <div className="text-center py-12">
+                <BookOpen className="w-8 h-8 text-brand-text-muted mx-auto mb-3" />
+                <p className="text-[13px] text-brand-text-muted">No articles yet. Add your first article above.</p>
               </div>
-              <div className="flex-1 overflow-y-auto p-6 space-y-6">
-                 {comments.length === 0 ? (
-                    <div className="text-center text-sm text-brand-text-secondary py-8">No messages in this thread yet.</div>
-                 ) : (
-                    comments.map(comment => (
-                      <div key={comment.id} className="flex gap-3">
-                         <div className={`w-8 h-8 shrink-0 rounded-full flex items-center justify-center border ${comment.sender === 'admin@gmail.com' ? 'bg-brand-primary/10 border-brand-primary/20' : 'bg-brand-surface border-brand-border'}`}>
-                            {comment.sender === 'admin@gmail.com' ? <Sparkles className="w-4 h-4 text-brand-primary"/> : <User className="w-4 h-4 text-brand-text-secondary"/>}
-                         </div>
-                         <div>
-                            <div className="flex items-center gap-2 mb-1">
-                               <span className="text-xs font-medium text-brand-text-primary">{comment.sender}</span>
-                               <span className="text-[10px] text-brand-text-secondary">{comment.created_at ? new Date(comment.created_at).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}) : ""}</span>
-                            </div>
-                            <div className="text-sm text-brand-text-primary leading-relaxed">
-                               {comment.message}
-                            </div>
-                         </div>
+            ) : (
+              <div className="space-y-2">
+                {knowledge.map((item) => (
+                  <div key={item.id} className="bg-brand-surface border border-brand-border rounded-lg p-4 group hover:border-brand-border-strong transition-colors">
+                    <div className="flex items-start justify-between gap-3">
+                      <div className="min-w-0">
+                        <h4 className="text-[13px] font-medium text-brand-text-primary mb-1">{item.title}</h4>
+                        <p className="text-[12px] text-brand-text-muted line-clamp-2">{item.content}</p>
                       </div>
-                    ))
-                 )}
+                      <button
+                        onClick={() => deleteKnowledge(item.id)}
+                        className="p-1.5 text-brand-text-muted hover:text-brand-danger rounded-md opacity-0 group-hover:opacity-100 transition-all"
+                      >
+                        <Trash2 className="w-3.5 h-3.5" />
+                      </button>
+                    </div>
+                  </div>
+                ))}
               </div>
-              <div className="p-4 border-t border-brand-border bg-brand-bg rounded-b-xl shrink-0 space-y-3">
-                 <div className="flex gap-2">
-                    <button onClick={() => generateAiReply(selectedCommentTicket.id)} className="px-3 py-1.5 bg-brand-surface border border-brand-border hover:bg-brand-elevated text-xs font-medium text-brand-text-primary rounded-md flex items-center gap-2 transition-colors">
-                      <BrainCircuit className="w-3.5 h-3.5 text-brand-primary" />
-                      Suggest Reply
-                    </button>
-                 </div>
-                 <AnimatePresence>
-                    {aiReply && (
-                       <motion.div initial={{opacity: 0, height: 0}} animate={{opacity: 1, height: 'auto'}} exit={{opacity: 0, height: 0}} className="overflow-hidden">
-                          <div className="p-3 bg-brand-primary/5 border border-brand-primary/20 rounded-md">
-                             <div className="text-xs text-brand-text-secondary mb-2 whitespace-pre-wrap">{aiReply}</div>
-                             <button onClick={() => setNewComment(aiReply)} className="text-[10px] font-medium bg-brand-primary text-white px-2 py-1 rounded transition-colors hover:bg-brand-primary/90">Use Suggestion</button>
-                          </div>
-                       </motion.div>
-                    )}
-                 </AnimatePresence>
-                 <div className="flex gap-2 relative">
-                    <textarea value={newComment} onChange={(e)=>setNewComment(e.target.value)} placeholder="Type a response..." rows={1} className="flex-1 bg-brand-surface border border-brand-border rounded-md px-3 py-2 text-sm text-brand-text-primary placeholder:text-brand-text-secondary focus:outline-none focus:border-brand-primary resize-none min-h-[40px] max-h-[120px]" onKeyDown={(e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendAdminComment(); }}} />
-                    <button onClick={sendAdminComment} disabled={!newComment.trim()} className="shrink-0 px-3 py-2 bg-brand-primary text-white rounded-md disabled:opacity-50 transition-colors h-[40px]">
-                      <Send className="w-4 h-4" />
-                    </button>
-                 </div>
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* ── Override Modal ── */}
+      <AnimatePresence>
+        {selectedTicket && !selectedCommentTicket && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              transition={{ duration: 0.15 }}
+              className="absolute inset-0 bg-brand-bg/80 backdrop-blur-sm"
+              onClick={() => setSelectedTicket(null)}
+            />
+            <motion.div
+              initial={{ opacity: 0, scale: 0.97 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.97 }}
+              transition={{ duration: 0.15 }}
+              className="relative w-full max-w-lg bg-brand-surface border border-brand-border rounded-xl overflow-hidden"
+            >
+              <div className="px-5 py-4 border-b border-brand-border flex items-center justify-between">
+                <h2 className="text-[14px] font-semibold text-brand-text-primary">Override Action</h2>
+                <button onClick={() => setSelectedTicket(null)} className="text-brand-text-muted hover:text-brand-text-primary">
+                  <X className="w-4 h-4" />
+                </button>
+              </div>
+              <div className="p-5 space-y-4">
+                <div>
+                  <div className="text-[11px] font-medium text-brand-text-muted uppercase tracking-wide mb-1">Ticket</div>
+                  <div className="text-[13px] text-brand-text-primary">{selectedTicket.subject}</div>
+                </div>
+                <div>
+                  <div className="text-[11px] font-medium text-brand-text-muted uppercase tracking-wide mb-1">Current AI Action</div>
+                  <div className="text-[12px] text-brand-text-secondary bg-brand-bg p-3 rounded-md border border-brand-border">
+                    {selectedTicket.action_taken || "Pending"}
+                  </div>
+                </div>
+                <div>
+                  <label className="text-[13px] font-medium text-brand-text-primary block mb-1.5">Override Reason</label>
+                  <textarea
+                    value={overrideText}
+                    onChange={(e) => setOverrideText(e.target.value)}
+                    placeholder="Explain the manual override..."
+                    rows={2}
+                    className="w-full bg-brand-bg border border-brand-border rounded-md px-3 py-2 text-[13px] text-brand-text-primary placeholder:text-brand-text-muted focus:outline-none focus:border-brand-border-strong resize-none"
+                  />
+                </div>
+                <div>
+                  <label className="text-[13px] font-medium text-brand-text-primary block mb-1.5">Resolution Note</label>
+                  <textarea
+                    value={resolutionNote}
+                    onChange={(e) => setResolutionNote(e.target.value)}
+                    placeholder="Note for the customer..."
+                    rows={2}
+                    className="w-full bg-brand-bg border border-brand-border rounded-md px-3 py-2 text-[13px] text-brand-text-primary placeholder:text-brand-text-muted focus:outline-none focus:border-brand-border-strong resize-none"
+                  />
+                </div>
+              </div>
+              <div className="px-5 py-3 border-t border-brand-border flex justify-end gap-2">
+                <button
+                  onClick={() => { updateResolutionNote(selectedTicket.id, resolutionNote); setSelectedTicket(null); }}
+                  className="px-4 py-2 bg-brand-surface border border-brand-border rounded-md text-[13px] font-medium text-brand-text-primary hover:bg-brand-elevated transition-colors"
+                >
+                  Save Note Only
+                </button>
+                <button
+                  onClick={handleApplyOverride}
+                  disabled={isSubmitting || !overrideText.trim()}
+                  className="px-4 py-2 bg-brand-primary text-white rounded-md text-[13px] font-medium disabled:opacity-40 hover:bg-brand-primary/90 transition-colors"
+                >
+                  {isSubmitting ? "Applying..." : "Apply Override"}
+                </button>
               </div>
             </motion.div>
           </div>
         )}
       </AnimatePresence>
 
-      {/* Override Modal */}
+      {/* Override modal for when detail panel is also open */}
       <AnimatePresence>
-        {selectedTicket && !selectedCommentTicket && (
+        {selectedTicket && selectedCommentTicket && (
           <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-             <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="absolute inset-0 bg-brand-bg/80 backdrop-blur-sm" onClick={() => setSelectedTicket(null)} />
-             <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.95 }} className="relative w-full max-w-lg bg-brand-surface border border-brand-border rounded-xl shadow-2xl overflow-hidden flex flex-col">
-                <div className="p-4 border-b border-brand-border flex items-center justify-between bg-brand-bg">
-                  <div className="flex items-center gap-2 text-brand-text-primary">
-                    <ShieldAlert className="w-4 h-4 text-brand-warning" />
-                    <span className="text-sm font-semibold">Intervention Console</span>
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              transition={{ duration: 0.15 }}
+              className="absolute inset-0 bg-brand-bg/80 backdrop-blur-sm"
+              onClick={() => setSelectedTicket(null)}
+            />
+            <motion.div
+              initial={{ opacity: 0, scale: 0.97 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.97 }}
+              transition={{ duration: 0.15 }}
+              className="relative w-full max-w-lg bg-brand-surface border border-brand-border rounded-xl overflow-hidden"
+            >
+              <div className="px-5 py-4 border-b border-brand-border flex items-center justify-between">
+                <h2 className="text-[14px] font-semibold text-brand-text-primary">Override Action</h2>
+                <button onClick={() => setSelectedTicket(null)} className="text-brand-text-muted hover:text-brand-text-primary">
+                  <X className="w-4 h-4" />
+                </button>
+              </div>
+              <div className="p-5 space-y-4">
+                <div>
+                  <div className="text-[11px] font-medium text-brand-text-muted uppercase tracking-wide mb-1">Ticket</div>
+                  <div className="text-[13px] text-brand-text-primary">{selectedTicket.subject}</div>
+                </div>
+                <div>
+                  <div className="text-[11px] font-medium text-brand-text-muted uppercase tracking-wide mb-1">Current AI Action</div>
+                  <div className="text-[12px] text-brand-text-secondary bg-brand-bg p-3 rounded-md border border-brand-border">
+                    {selectedTicket.action_taken || "Pending"}
                   </div>
-                  <button onClick={() => setSelectedTicket(null)} className="text-brand-text-secondary hover:text-brand-text-primary"><X className="w-4 h-4"/></button>
                 </div>
-                <div className="p-6 space-y-6 flex-1 overflow-y-auto">
-                   <div className="space-y-4">
-                      <div>
-                        <div className="text-[10px] font-medium text-brand-text-secondary mb-1">TICKET SUBJECT</div>
-                        <div className="text-sm text-brand-text-primary">{selectedTicket.subject}</div>
-                      </div>
-                      <div>
-                        <div className="text-[10px] font-medium text-brand-text-secondary mb-1">AI ACTION</div>
-                        <div className="text-xs font-mono text-brand-text-secondary bg-brand-bg p-2 rounded border border-brand-border">
-                          {selectedTicket.action_taken || "Pending"}
-                        </div>
-                      </div>
-                   </div>
-                   <div className="space-y-4 pt-4 border-t border-brand-border">
-                      <div className="space-y-1.5">
-                        <label className="text-xs font-medium text-brand-text-primary">System Override Log</label>
-                        <textarea value={overrideText} onChange={e=>setOverrideText(e.target.value)} placeholder="Explain the manual override action..." rows={2} className="w-full bg-brand-bg border border-brand-border rounded-md px-3 py-2 text-sm text-brand-text-primary placeholder:text-brand-text-secondary focus:outline-none focus:border-brand-primary resize-none" />
-                      </div>
-                      <div className="space-y-1.5">
-                        <label className="text-xs font-medium text-brand-text-primary">Resolution Note (Customer Facing)</label>
-                        <textarea value={resolutionNote} onChange={e=>setResolutionNote(e.target.value)} placeholder="Update the customer on the outcome..." rows={2} className="w-full bg-brand-bg border border-brand-border rounded-md px-3 py-2 text-sm text-brand-text-primary placeholder:text-brand-text-secondary focus:outline-none focus:border-brand-primary resize-none" />
-                      </div>
-                   </div>
+                <div>
+                  <label className="text-[13px] font-medium text-brand-text-primary block mb-1.5">Override Reason</label>
+                  <textarea
+                    value={overrideText}
+                    onChange={(e) => setOverrideText(e.target.value)}
+                    placeholder="Explain the manual override..."
+                    rows={2}
+                    className="w-full bg-brand-bg border border-brand-border rounded-md px-3 py-2 text-[13px] text-brand-text-primary placeholder:text-brand-text-muted focus:outline-none focus:border-brand-border-strong resize-none"
+                  />
                 </div>
-                <div className="p-4 border-t border-brand-border bg-brand-bg flex justify-end gap-3">
-                   <button onClick={() => { updateResolutionNote(selectedTicket.id, resolutionNote); setSelectedTicket(null); }} className="px-4 py-2 bg-brand-surface border border-brand-border hover:bg-brand-elevated text-brand-text-primary text-xs font-medium rounded-md transition-colors">
-                     Save Resolution Only
-                   </button>
-                   <button onClick={handleApplyOverride} disabled={isSubmitting || !overrideText.trim()} className="px-4 py-2 bg-brand-primary hover:bg-brand-primary/90 text-white disabled:opacity-50 text-xs font-medium rounded-md transition-colors">
-                     {isSubmitting ? "Applying..." : "Apply Full Override"}
-                   </button>
+                <div>
+                  <label className="text-[13px] font-medium text-brand-text-primary block mb-1.5">Resolution Note</label>
+                  <textarea
+                    value={resolutionNote}
+                    onChange={(e) => setResolutionNote(e.target.value)}
+                    placeholder="Note for the customer..."
+                    rows={2}
+                    className="w-full bg-brand-bg border border-brand-border rounded-md px-3 py-2 text-[13px] text-brand-text-primary placeholder:text-brand-text-muted focus:outline-none focus:border-brand-border-strong resize-none"
+                  />
                 </div>
-             </motion.div>
+              </div>
+              <div className="px-5 py-3 border-t border-brand-border flex justify-end gap-2">
+                <button
+                  onClick={() => { updateResolutionNote(selectedTicket.id, resolutionNote); setSelectedTicket(null); }}
+                  className="px-4 py-2 bg-brand-surface border border-brand-border rounded-md text-[13px] font-medium text-brand-text-primary hover:bg-brand-elevated transition-colors"
+                >
+                  Save Note Only
+                </button>
+                <button
+                  onClick={handleApplyOverride}
+                  disabled={isSubmitting || !overrideText.trim()}
+                  className="px-4 py-2 bg-brand-primary text-white rounded-md text-[13px] font-medium disabled:opacity-40 hover:bg-brand-primary/90 transition-colors"
+                >
+                  {isSubmitting ? "Applying..." : "Apply Override"}
+                </button>
+              </div>
+            </motion.div>
           </div>
         )}
       </AnimatePresence>
 
-       {/* Paywall Modal (Simplified) */}
-       <AnimatePresence>
+      {/* ── Paywall Modal ── */}
+      <AnimatePresence>
         {showPaywall && (
-          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="fixed inset-0 z-50 bg-brand-bg/80 backdrop-blur-sm flex items-center justify-center p-4">
-            <motion.div initial={{ scale: 0.95 }} animate={{ scale: 1 }} exit={{ scale: 0.95 }} className="w-full max-w-lg bg-brand-surface border border-brand-border rounded-xl shadow-2xl p-6 relative">
-              <button onClick={() => setShowPaywall(false)} className="absolute top-4 right-4 text-brand-text-secondary hover:text-brand-text-primary"><X className="w-4 h-4"/></button>
-              <div className="mb-6">
-                <span className="text-[10px] font-bold uppercase tracking-wider text-brand-primary bg-brand-primary/10 px-2 py-1 rounded-md">Upgrade Required</span>
-                <h2 className="text-xl font-semibold mt-3 text-brand-text-primary">Unlock Priority Operations</h2>
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-50 bg-brand-bg/80 backdrop-blur-sm flex items-center justify-center p-4"
+          >
+            <motion.div
+              initial={{ scale: 0.97 }}
+              animate={{ scale: 1 }}
+              exit={{ scale: 0.97 }}
+              className="w-full max-w-md bg-brand-surface border border-brand-border rounded-xl p-6 relative"
+            >
+              <button onClick={() => setShowPaywall(false)} className="absolute top-4 right-4 text-brand-text-muted hover:text-brand-text-primary">
+                <X className="w-4 h-4" />
+              </button>
+              <div className="mb-5">
+                <span className="text-[11px] font-semibold uppercase tracking-wider text-brand-primary">Upgrade Required</span>
+                <h2 className="text-[16px] font-semibold mt-2 text-brand-text-primary">Unlock full access</h2>
+                <p className="text-[13px] text-brand-text-muted mt-1">Your workspace has reached the free tier limit.</p>
               </div>
-              <button onClick={() => handleTriggerCheckout("Growth")} disabled={checkoutLoading} className="w-full py-2 bg-brand-primary text-white text-sm font-medium rounded-md flex justify-center items-center gap-2 transition-colors">
-                {checkoutLoading ? <Loader2 className="w-4 h-4 animate-spin"/> : "Upgrade Workspace"}
+              <button
+                onClick={() => handleTriggerCheckout("Growth")}
+                disabled={checkoutLoading}
+                className="w-full py-2.5 bg-brand-primary text-white text-[13px] font-medium rounded-md flex justify-center items-center gap-2 hover:bg-brand-primary/90 transition-colors"
+              >
+                {checkoutLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : "Upgrade Workspace"}
               </button>
             </motion.div>
           </motion.div>
         )}
       </AnimatePresence>
-
     </div>
   );
 }
